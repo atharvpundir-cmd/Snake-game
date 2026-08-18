@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b1220" />
+    <title>hidingsnake.io</title>
+  </head>
+  <body>
+    <div id="app">
+      <header id="topbar">
+        <div class="brand">hiding<span>snake</span>.io</div>
+        <div id="profile-chip">
+          <span id="profile-nickname">Player</span>
+          <span id="profile-level">Lv 1</span>
+        </div>
+      </header>
+
+      <main id="screens">
+        <section id="screen-menu" class="screen active">
+          <h1>hidingsnake.io</h1>
+          <p class="tagline">Classic snake. Custom skins. Real opponents (or bots when none are around).</p>
+          <div class="menu-buttons">
+            <button id="btn-play-offline" class="btn btn-primary">Play Offline</button>
+            <button id="btn-play-online" class="btn btn-primary">Play Online</button>
+            <button id="btn-skins" class="btn">Skins</button>
+            <button id="btn-settings" class="btn">Settings</button>
+            <button id="btn-leaderboard" class="btn">Leaderboard</button>
+          </div>
+          <div id="xp-bar-wrap">
+            <div id="xp-bar"><div id="xp-bar-fill"></div></div>
+            <div id="xp-bar-label">0 / 100 XP</div>
+          </div>
+        </section>
+
+        <section id="screen-settings" class="screen">
+          <h2>Settings</h2>
+          <label class="field">
+            Nickname
+            <input id="setting-nickname" maxlength="18" type="text" />
+          </label>
+          <label class="field">
+            Board size
+            <select id="setting-board-size">
+              <option value="small">Small</option>
+              <option value="medium">Medium</option>
+              <option value="large">Large</option>
+            </select>
+          </label>
+          <label class="field">
+            Speed
+            <select id="setting-speed">
+              <option value="slow">Slow</option>
+              <option value="normal">Normal</option>
+              <option value="fast">Fast</option>
+            </select>
+          </label>
+          <label class="field checkbox">
+            <input id="setting-wrap" type="checkbox" />
+            Wrap-around walls
+          </label>
+          <p class="hint">Offline practice settings only — online matches use a fixed fair board for everyone.</p>
+          <button id="btn-settings-back" class="btn btn-primary">Back</button>
+        </section>
+
+        <section id="screen-skins" class="screen">
+          <h2>Skins</h2>
+          <p class="hint">Unlock new skins by leveling up. XP comes from playing matches (online counts double).</p>
+          <div id="skins-grid"></div>
+          <button id="btn-skins-back" class="btn btn-primary">Back</button>
+        </section>
+
+        <section id="screen-leaderboard" class="screen">
+          <h2>Global Leaderboard</h2>
+          <p class="hint">Only server-verified online matches count toward the global leaderboard.</p>
+          <div id="leaderboard-list"></div>
+          <button id="btn-leaderboard-back" class="btn btn-primary">Back</button>
+        </section>
+
+        <section id="screen-game" class="screen">
+          <div id="game-hud">
+            <div id="hud-score">Score: 0</div>
+            <div id="hud-status"></div>
+            <button id="btn-quit" class="btn btn-small">Quit</button>
+          </div>
+          <div id="canvas-wrap">
+            <canvas id="game-canvas"></canvas>
+            <div id="waiting-overlay" class="overlay hidden">
+              <div class="overlay-box">
+                <p id="waiting-text">Looking for players…</p>
+                <p class="hint">Bots will fill any open seats if no one else joins in time.</p>
+                <button id="btn-cancel-find" class="btn">Cancel</button>
+              </div>
+            </div>
+          </div>
+          <div id="dpad">
+            <button data-dir="up">↑</button>
+            <div class="dpad-row">
+              <button data-dir="left">←</button>
+              <button data-dir="down">↓</button>
+              <button data-dir="right">→</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="screen-gameover" class="screen">
+          <h2 id="gameover-title">Game Over</h2>
+          <div id="gameover-stats"></div>
+          <button id="btn-gameover-menu" class="btn btn-primary">Back to Menu</button>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
