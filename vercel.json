@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm install --workspace client --include-workspace-root",
+  "buildCommand": "npm run build -w client",
+  "outputDirectory": "client/dist",
+  "rewrites": [
+    { "source": "/((?!assets/|favicon.svg|icons.svg|manifest.webmanifest|sw.js|registerSW.js|workbox-).*)", "destination": "/index.html" }
+  ]
+}
