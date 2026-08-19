@@ -408,3 +408,24 @@ function solid(x,y){
   return MAP[idx(x|0,y|0)];
 }
 function solidAt(px,py){ return solid(px|0,py|0); }
+/* what a bullet hitting this wall tile should sound like */
+function matOfTile(code){
+  switch(code){
+    case 2: return 'glass';
+    case 3: return 'metal';
+    case 4: return 'wood';
+    case 6: return 'dirt';
+    case 7: return 'metal';
+    default: return 'concrete';
+  }
+}
+/* what walking on this ground tile should sound like */
+function surfOfFloor(x,y){
+  if(x<0||y<0||x>=MW||y>=MH) return 'stepStone';
+  switch(FLR[idx(x|0,y|0)]){
+    case 2: return 'stepGrass';
+    case 3: return 'stepTile';
+    case 4: return 'stepDirt';
+    default: return 'stepStone';
+  }
+}

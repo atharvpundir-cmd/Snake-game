@@ -223,7 +223,7 @@ function killActor(v, k, wname, zone, dist){
     P.lastKilledBy=k? k.name : null;
     SND.die(); playerDied(k, wname);
   } else if(!v.isPlayer){
-    SND.impact(panOf(v.x,v.y), volOf(v.x,v.y)*0.9);
+    SND.impact(panOf(v.x,v.y), volOf(v.x,v.y)*0.9, 'flesh');
   }
   if(k && k!==v){
     k.streak=(k.streak||0)+1; k.best=max(k.best||0,k.streak);
@@ -348,7 +348,8 @@ function botFire(b,tx,ty,tz){
   if(!hitSomething){
     var wd=min(r.wallD,d.range+8);
     var hx=b.x+ndx*wd, hy=b.y+ndy*wd, hz=0.62+dz*wd;
-    if(hz>0.02&&hz<1.6){ impactFX(hx,hy,hz,-ndx,-ndy); SND.impact(panOf(hx,hy),volOf(hx,hy)*0.7); }
+    if(hz>0.02&&hz<1.6){ impactFX(hx,hy,hz,-ndx,-ndy);
+      SND.impact(panOf(hx,hy),volOf(hx,hy)*0.7, matOfTile(r.wall.tex)); }
     // near-miss crack for the player
     var mx=P.x-b.x, my=P.y-b.y, tproj=mx*ndx+my*ndy;
     if(P.alive&&tproj>0){ var pd=abs(mx*ndy-my*ndx); if(pd<1.5&&tproj<wd+1) SND.whiz(clamp((mx*ndy-my*ndx)*0.7,-1,1)); }
@@ -444,7 +445,7 @@ function updateBot(b,dt){
     if(moved>0.001){
       b.stepT=(b.stepT||0)-moved;
       if(b.stepT<=0){ b.stepT=0.62; var dP=dist2P(b.x,b.y);
-        if(dP<9) SND.step(clamp(1-dP/9,0,1)*0.7, panOf(b.x,b.y)); }
+        if(dP<9) SND.step(clamp(1-dP/9,0,1)*0.7, panOf(b.x,b.y), surfOfFloor(b.x,b.y)); }
     }
   } else b.walkPhase=0;
   // turn

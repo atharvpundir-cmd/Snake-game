@@ -155,7 +155,7 @@ function fire(){
     var hx=P.x+dx*wd, hy=P.y+dy*wd, hz=eyeZ+dz*wd;
     if(wd<d.range+22 && hz>0.02 && hz<2.4){
       impactFX(hx,hy,hz,-dx,-dy);
-      SND.impact(panOf(hx,hy),volOf(hx,hy)*0.55);
+      SND.impact(panOf(hx,hy),volOf(hx,hy)*0.55, matOfTile(r.wall.tex));
     }
   }
   // bolt cycle
@@ -209,11 +209,12 @@ function updatePlayer(dt){
   moveEnt(P,P.vx*dt,P.vy*dt,P.radius);
   var moved=sqrt((P.x-oldx)*(P.x-oldx)+(P.y-oldy)*(P.y-oldy));
   /* ---- jump / vertical ---- */
-  if((down('jump')||TOUCH.jump)&&P.z<=0.001&&P.vz===0){ P.vz=3.05; SND.step(0.5,0); }
+  if((down('jump')||TOUCH.jump)&&P.z<=0.001&&P.vz===0){ P.vz=3.05;
+    SND.step(0.5,0,surfOfFloor(P.x,P.y)); }
   TOUCH.jump=0;
   if(P.vz!==0||P.z>0){
     P.vz-=11.5*dt; P.z+=P.vz*dt;
-    if(P.z<=0){ P.z=0; if(P.vz<-1.2) SND.step(0.8,0); P.vz=0; }
+    if(P.z<=0){ P.z=0; if(P.vz<-1.2) SND.step(0.8,0,surfOfFloor(P.x,P.y)); P.vz=0; }
   }
   /* ---- head bob + footsteps ---- */
   var speedFrac=moved/dt/max(0.1,base);
@@ -224,7 +225,8 @@ function updatePlayer(dt){
   VM.bobY=abs(sin(P.bobT))*bobAmt*8;
   if(moved>0.0008 && P.z<=0.001){
     P.stepT-=moved*(P.sprint>0.5?1.5:1);
-    if(P.stepT<=0){ P.stepT=0.68; SND.step(0.55+P.sprint*0.3,rr(-0.15,0.15)); }
+    if(P.stepT<=0){ P.stepT=0.68;
+      SND.step(0.55+P.sprint*0.3, rr(-0.15,0.15), surfOfFloor(P.x,P.y)); }
   }
   /* ---- recoil recovery ---- */
   P.pitch += P.recoilV*dt*14;
