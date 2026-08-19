@@ -82,6 +82,16 @@ function fxSpawn(o){
     add:o.add||0, spin:o.spin||0, fade:o.fade===undefined?1:o.fade,
     grow:o.grow||0, a0:o.a0===undefined?1:o.a0 });
 }
+/* glowing tracer beads strung along the bullet path */
+function tracer(x0,y0,z0,dx,dy,dz,dist,hot){
+  var n=min(10, max(3, (dist*0.55)|0));
+  for(var i=1;i<=n;i++){
+    var f=i/n, t=f*dist;
+    fxSpawn({x:x0+dx*t, y:y0+dy*t, z:z0+dz*t,
+      life:0.05+0.03*f, spr:SPR.spark, size:0.042-0.018*f,
+      add:1, a0:hot?0.95:0.55, grav:0});
+  }
+}
 function decal(x,y,z,side){
   if(DECALS.length>90) DECALS.shift();
   DECALS.push({x:x,y:y,z:z,life:26,max:26,side:side,size:0.10+rnd()*0.05});
@@ -320,6 +330,8 @@ function botFire(b,tx,ty,tz){
   var pan=panOf(b.x,b.y), vol=volOf(b.x,b.y);
   SND.gunshot(d.snd,pan,vol);
   fxSpawn({x:b.x+ndx*0.42,y:b.y+ndy*0.42,z:0.66,life:0.055,spr:SPR.flash,size:0.30,add:1});
+  addLight(b.x+ndx*0.5, b.y+ndy*0.5, 0.62, 1.0,0.82,0.45, 1.5, 0.06);
+  tracer(b.x+ndx*0.5, b.y+ndy*0.5, 0.62, ndx,ndy,dz, min(r.wallD, d.range+8), false);
   b.mag--; b.lastFire=G.t;
   var hitSomething=false;
   for(var i=0;i<r.hits.length;i++){

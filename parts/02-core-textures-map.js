@@ -33,6 +33,7 @@ var D = {
   pickKey:$('pick').querySelector('.k'), pickFill:$('pick').querySelector('.ring i'),
   mini:$('mini'), minic:$('minic'), board:$('board'), boardBody:$('boardBody'),
   killed:$('killed'), killedName:$('killedName'),
+  touch:$('touch'), rotate:$('rotate'),
   menu:$('menu'), panel:$('panel'), loading:$('loading')
 };
 var mctx = D.minic.getContext('2d');
@@ -43,16 +44,27 @@ var mctx = D.minic.getContext('2d');
 var DEFAULT_BINDS = {
   fwd:'KeyW', back:'KeyS', left:'KeyA', right:'KeyD',
   interact:'KeyF', reload:'KeyR', sprint:'ShiftLeft', jump:'Space',
-  crouch:'ControlLeft', melee:'KeyV', swap:'KeyQ', score:'Tab'
+  crouch:'ControlLeft', melee:'KeyV', swap:'KeyQ', score:'Tab',
+  wpn1:'Digit1', wpn2:'Digit2', ks1:'Digit3', ks2:'Digit4', ks3:'Digit5'
 };
 var BIND_LABELS = {
   fwd:'Move Forward', back:'Move Back', left:'Strafe Left', right:'Strafe Right',
   interact:'Interact / Pick Up', reload:'Reload', sprint:'Sprint', jump:'Jump',
-  crouch:'Crouch', melee:'Melee', swap:'Swap Weapon', score:'Scoreboard'
+  crouch:'Crouch', melee:'Melee', swap:'Swap Weapon', score:'Scoreboard',
+  wpn1:'Primary Weapon', wpn2:'Secondary Weapon',
+  ks1:'Killstreak 1 (UAV)', ks2:'Killstreak 2 (Hunter)', ks3:'Killstreak 3 (Lodestar)'
 };
+/* Touch device? Phones and tablets get lower default resolution, on-screen
+   controls, and no pointer lock. */
+var IS_TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+var IS_SMALL = Math.min(screen.width, screen.height) < 820;
+var MOBILE = IS_TOUCH && IS_SMALL;
+
 var S = {
-  binds: {}, sens: 1.0, adsSens: 0.55, fov: 75, res: 0.62,
-  invertY: 0, adsHold: 0, sfx: 0.8, shake: 1, autoSprint: 0
+  binds: {}, sens: 1.0, adsSens: 0.55, fov: MOBILE?80:75, res: MOBILE?0.42:0.62,
+  invertY: 0, adsHold: 0, sfx: 0.8, shake: 1, autoSprint: 0,
+  touchSens: 1.0, touchAutoFire: 1, leftHanded: 0,
+  bloom: MOBILE?0:0.42, grain: 1, flare: 1
 };
 (function loadSettings(){
   for(var k in DEFAULT_BINDS) S.binds[k]=DEFAULT_BINDS[k];
@@ -240,28 +252,59 @@ function buildSky(){
     sg.addColorStop(0,'rgba(255,252,235,1)'); sg.addColorStop(.09,'rgba(255,244,205,.95)');
     sg.addColorStop(.35,'rgba(255,228,168,.28)'); sg.addColorStop(1,'rgba(255,220,160,0)');
     g.fillStyle=sg; g.fillRect(0,0,w,h);
-    // clouds
-    for(var i=0;i<44;i++){
-      var cx=rnd()*w, cy=rr(10,190), s=rr(.6,2.3), a=rr(.10,.42);
-      g.fillStyle='rgba(255,255,255,'+a+')';
-      for(var p=0;p<9;p++){
-        g.beginPath();
-        g.ellipse(cx+rr(-70,70)*s, cy+rr(-13,13)*s, rr(22,60)*s, rr(9,20)*s, 0,0,TAU);
-        g.fill();
+    // layered cumulus: dark base, lit crown, sun-side rim
+    for(var i=0;i<30;i++){
+      var cx=rnd()*w, cy=rr(24,178), s=rr(.55,1.9);
+      var puffs=ri(7,12), pts=[];
+      for(var p=0;p<puffs;p++)
+        pts.push([cx+rr(-78,78)*s, cy+rr(-11,15)*s, rr(20,52)*s, rr(11,24)*s]);
+      g.fillStyle='rgba(176,196,214,.34)';
+      for(var p2=0;p2<pts.length;p2++){
+        g.beginPath(); g.ellipse(pts[p2][0],pts[p2][1]+7*s,pts[p2][2],pts[p2][3],0,0,TAU); g.fill(); }
+      g.fillStyle='rgba(255,255,255,.62)';
+      for(var p3=0;p3<pts.length;p3++){
+        g.beginPath(); g.ellipse(pts[p3][0],pts[p3][1],pts[p3][2]*.94,pts[p3][3]*.88,0,0,TAU); g.fill(); }
+      g.fillStyle='rgba(255,248,226,.5)';
+      for(var p4=0;p4<pts.length;p4++){
+        g.beginPath(); g.ellipse(pts[p4][0]-pts[p4][2]*.16,pts[p4][1]-pts[p4][3]*.34,
+          pts[p4][2]*.55,pts[p4][3]*.45,0,0,TAU); g.fill(); }
+    }
+    // high cirrus streaks
+    g.save(); g.globalAlpha=.20;
+    for(var ci=0;ci<26;ci++){
+      g.fillStyle='#fff';
+      g.beginPath(); g.ellipse(rnd()*w, rr(8,70), rr(60,190), rr(1.5,4.5), rr(-.06,.06),0,TAU); g.fill();
+    }
+    g.restore();
+    // crisp distant skyline: two parallax bands of towers
+    function skyline(baseY,scale,col,detail){
+      var x=0;
+      while(x<w){
+        var bw=rr(16,54)*scale, bh=rr(20,86)*scale;
+        g.fillStyle=col;
+        g.fillRect(x,baseY-bh,bw,bh);
+        if(detail){
+          g.fillStyle='rgba(255,255,255,.10)';
+          for(var wy=baseY-bh+5; wy<baseY-4; wy+=7)
+            for(var wx=x+3; wx<x+bw-3; wx+=6) if(rnd()<.5) g.fillRect(wx,wy,2.5,3);
+          g.fillStyle=col;
+        }
+        if(rnd()<.28){ g.fillRect(x+bw*0.4, baseY-bh-rr(6,22)*scale, 2.5*scale, rr(6,22)*scale); }
+        x+=bw+rr(1,7)*scale;
       }
     }
-    // distant skyline haze
-    g.fillStyle='rgba(190,208,218,.75)';
-    for(var x=0;x<w;x+=1){
-      var hgt=26+18*sin(x*0.013)+12*sin(x*0.041+1.4)+8*sin(x*0.0073);
-      g.fillRect(x,h-hgt,1,hgt);
+    skyline(h-16, 1.25, 'rgba(150,172,192,.55)', false);
+    skyline(h-6,  0.95, 'rgba(118,142,166,.72)', true);
+    // ridge line of trees / low structures right at the horizon
+    g.fillStyle='rgba(96,118,132,.55)';
+    for(var t2=0;t2<w;t2+=3){
+      var th=4+3*sin(t2*0.09)+2.5*sin(t2*0.31+1.1)+rnd()*2;
+      g.fillRect(t2,h-th-2,3,th+2);
     }
-    g.fillStyle='rgba(150,172,188,.55)';
-    for(var b=0;b<70;b++){ var bx=rnd()*w, bw=rr(14,46), bh=rr(16,58);
-      g.fillRect(bx,h-bh-6,bw,bh); }
-    var hz=g.createLinearGradient(0,h-70,0,h);
-    hz.addColorStop(0,'rgba(226,238,244,0)'); hz.addColorStop(1,'rgba(226,238,244,.95)');
-    g.fillStyle=hz; g.fillRect(0,h-70,w,70);
+    // gentle horizon haze -- much lighter than before so distance stays legible
+    var hz=g.createLinearGradient(0,h-54,0,h);
+    hz.addColorStop(0,'rgba(214,229,241,0)'); hz.addColorStop(1,'rgba(214,229,241,.72)');
+    g.fillStyle=hz; g.fillRect(0,h-54,w,54);
   });
 }
 

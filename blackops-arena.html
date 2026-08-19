@@ -234,6 +234,82 @@ kbd{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);borde
 .lose{color:#ff7a68;text-shadow:0 0 34px rgba(255,60,40,.6)}
 #loading{position:absolute;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;
   background:#05070a;font-family:var(--fx);letter-spacing:6px;font-size:22px;color:var(--gold)}
+
+/* ---------- touch controls (phones / tablets) ---------- */
+#touch{position:absolute;inset:0;z-index:6;display:none;touch-action:none}
+#touch.on{display:block}
+#stickBase{position:absolute;width:132px;height:132px;margin:-66px 0 0 -66px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.30);background:rgba(0,0,0,.16);opacity:0;
+  transition:opacity .15s;pointer-events:none}
+#stickKnob{position:absolute;left:50%;top:50%;width:58px;height:58px;border-radius:50%;
+  background:rgba(255,255,255,.26);border:2px solid rgba(255,255,255,.55);
+  transform:translate(-50%,-50%);box-shadow:0 2px 10px rgba(0,0,0,.4)}
+.tbtn{position:absolute;display:flex;align-items:center;justify-content:center;border-radius:50%;
+  background:rgba(10,16,22,.40);border:2px solid rgba(255,255,255,.34);color:#fff;font-weight:800;
+  letter-spacing:1px;font-size:11px;text-shadow:0 1px 3px #000;
+  -webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);transition:transform .06s,background .06s}
+.tbtn.down{background:rgba(255,194,58,.48);border-color:var(--gold);transform:scale(.93)}
+.tbtn.active{border-color:var(--gold);background:rgba(255,194,58,.26)}
+#bFire{right:24px;bottom:92px;width:104px;height:104px;font-size:14px}
+#bAds{right:146px;bottom:146px;width:74px;height:74px}
+#bReload{right:146px;bottom:48px;width:62px;height:62px}
+#bJump{right:24px;bottom:208px;width:62px;height:62px}
+#bCrouch{right:100px;bottom:230px;width:54px;height:54px}
+#bSwap{right:24px;bottom:20px;width:58px;height:58px}
+#bMelee{right:100px;bottom:20px;width:54px;height:54px}
+#bUse{left:50%;bottom:112px;margin-left:-34px;width:68px;height:68px}
+#bMenu{right:16px;top:14px;width:42px;height:42px;font-size:15px}
+#touch.lefty #bFire{right:auto;left:24px}
+#touch.lefty #bAds{right:auto;left:146px}
+#touch.lefty #bReload{right:auto;left:146px}
+#touch.lefty #bJump{right:auto;left:24px}
+#touch.lefty #bCrouch{right:auto;left:100px}
+#touch.lefty #bSwap{right:auto;left:24px}
+#touch.lefty #bMelee{right:auto;left:100px}
+#rotate{position:absolute;inset:0;z-index:11;display:none;align-items:center;justify-content:center;
+  flex-direction:column;gap:10px;background:#05070a;color:var(--gold);text-align:center;padding:30px;
+  font-family:var(--fx);letter-spacing:5px;font-size:20px}
+#rotate.on{display:flex}
+#rotate i{display:block;width:56px;height:88px;border:3px solid var(--gold);border-radius:8px;
+  animation:tilt 1.6s ease-in-out infinite}
+@keyframes tilt{50%{transform:rotate(90deg)}}
+
+/* ---------- small screens ---------- */
+@media (max-width:900px),(max-height:560px){
+  #mini{width:104px;height:104px;left:12px;top:12px}
+  #score{left:12px;bottom:12px;gap:10px}
+  #clock{font-size:19px}
+  #score .tm span{font-size:19px;min-width:26px}
+  #score .tm i{width:11px;height:11px}
+  #feed{left:12px;bottom:70px}
+  .kf{font-size:10.5px;gap:4px}
+  .kf .wp{font-size:11.5px}
+  #mag{font-size:30px}
+  #res{font-size:20px}
+  #ammo .fire{font-size:9px;letter-spacing:2px}
+  #ammo .gun{font-size:8px;letter-spacing:2px}
+  .ks{width:34px;height:34px}
+  .ks canvas{width:23px;height:23px}
+  .ks .tx{display:none!important}
+  .medal{font-size:14px;letter-spacing:2px}
+  #pts .pt{font-size:16px}
+  #topc{top:4px}
+  #emblem{width:28px;height:32px}
+  #emblem i{width:13px;height:13px;margin-left:-6.5px;border-width:2px}
+  #killed{bottom:10px;padding:4px 10px;gap:6px}
+  #killed .nm{font-size:11px}
+  #killed .lbl{font-size:9px;letter-spacing:2px}
+  #killed .ic{width:16px;height:16px}
+  #killed .ic::before,#killed .ic::after{left:3px;top:6.8px;width:10px;height:2.2px}
+  #pick .row{font-size:12px}
+  #pick .ring{width:120px}
+  .panel .bd{padding:14px 18px 18px}
+  .grid2{grid-template-columns:1fr}
+}
+/* on touch the ammo block moves out from under the fire button */
+body.touch #rightcol{bottom:auto;top:12px;right:64px;flex-direction:column-reverse}
+body.touch #streaks{flex-direction:row}
+body.touch #reloadbar{right:64px;bottom:auto;top:96px;width:110px}
 ::-webkit-scrollbar{width:9px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:4px}
 </style>
 
@@ -291,6 +367,21 @@ kbd{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);borde
     <div id="reloadbar"><i></i></div>
   </div>
 
+  <div id="touch">
+    <div id="stickBase"><div id="stickKnob"></div></div>
+    <div class="tbtn" id="bFire">FIRE</div>
+    <div class="tbtn" id="bAds">ADS</div>
+    <div class="tbtn" id="bReload">RELOAD</div>
+    <div class="tbtn" id="bJump">JUMP</div>
+    <div class="tbtn" id="bCrouch">CRCH</div>
+    <div class="tbtn" id="bSwap">SWAP</div>
+    <div class="tbtn" id="bMelee">KNIFE</div>
+    <div class="tbtn" id="bUse">USE</div>
+    <div class="tbtn" id="bMenu">II</div>
+  </div>
+  <div id="rotate"><i></i>ROTATE YOUR DEVICE
+    <span style="font-size:.55em;letter-spacing:3px">LANDSCAPE REQUIRED</span></div>
+
   <div id="board" class="hidden"><div class="card">
     <h3>SCOREBOARD</h3>
     <table><thead><tr><th>OPERATOR</th><th>SCORE</th><th>KILLS</th><th>DEATHS</th><th>STREAK</th></tr></thead>
@@ -335,6 +426,7 @@ var D = {
   pickKey:$('pick').querySelector('.k'), pickFill:$('pick').querySelector('.ring i'),
   mini:$('mini'), minic:$('minic'), board:$('board'), boardBody:$('boardBody'),
   killed:$('killed'), killedName:$('killedName'),
+  touch:$('touch'), rotate:$('rotate'),
   menu:$('menu'), panel:$('panel'), loading:$('loading')
 };
 var mctx = D.minic.getContext('2d');
@@ -345,16 +437,27 @@ var mctx = D.minic.getContext('2d');
 var DEFAULT_BINDS = {
   fwd:'KeyW', back:'KeyS', left:'KeyA', right:'KeyD',
   interact:'KeyF', reload:'KeyR', sprint:'ShiftLeft', jump:'Space',
-  crouch:'ControlLeft', melee:'KeyV', swap:'KeyQ', score:'Tab'
+  crouch:'ControlLeft', melee:'KeyV', swap:'KeyQ', score:'Tab',
+  wpn1:'Digit1', wpn2:'Digit2', ks1:'Digit3', ks2:'Digit4', ks3:'Digit5'
 };
 var BIND_LABELS = {
   fwd:'Move Forward', back:'Move Back', left:'Strafe Left', right:'Strafe Right',
   interact:'Interact / Pick Up', reload:'Reload', sprint:'Sprint', jump:'Jump',
-  crouch:'Crouch', melee:'Melee', swap:'Swap Weapon', score:'Scoreboard'
+  crouch:'Crouch', melee:'Melee', swap:'Swap Weapon', score:'Scoreboard',
+  wpn1:'Primary Weapon', wpn2:'Secondary Weapon',
+  ks1:'Killstreak 1 (UAV)', ks2:'Killstreak 2 (Hunter)', ks3:'Killstreak 3 (Lodestar)'
 };
+/* Touch device? Phones and tablets get lower default resolution, on-screen
+   controls, and no pointer lock. */
+var IS_TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+var IS_SMALL = Math.min(screen.width, screen.height) < 820;
+var MOBILE = IS_TOUCH && IS_SMALL;
+
 var S = {
-  binds: {}, sens: 1.0, adsSens: 0.55, fov: 75, res: 0.62,
-  invertY: 0, adsHold: 0, sfx: 0.8, shake: 1, autoSprint: 0
+  binds: {}, sens: 1.0, adsSens: 0.55, fov: MOBILE?80:75, res: MOBILE?0.42:0.62,
+  invertY: 0, adsHold: 0, sfx: 0.8, shake: 1, autoSprint: 0,
+  touchSens: 1.0, touchAutoFire: 1, leftHanded: 0,
+  bloom: MOBILE?0:0.42, grain: 1, flare: 1
 };
 (function loadSettings(){
   for(var k in DEFAULT_BINDS) S.binds[k]=DEFAULT_BINDS[k];
@@ -542,28 +645,59 @@ function buildSky(){
     sg.addColorStop(0,'rgba(255,252,235,1)'); sg.addColorStop(.09,'rgba(255,244,205,.95)');
     sg.addColorStop(.35,'rgba(255,228,168,.28)'); sg.addColorStop(1,'rgba(255,220,160,0)');
     g.fillStyle=sg; g.fillRect(0,0,w,h);
-    // clouds
-    for(var i=0;i<44;i++){
-      var cx=rnd()*w, cy=rr(10,190), s=rr(.6,2.3), a=rr(.10,.42);
-      g.fillStyle='rgba(255,255,255,'+a+')';
-      for(var p=0;p<9;p++){
-        g.beginPath();
-        g.ellipse(cx+rr(-70,70)*s, cy+rr(-13,13)*s, rr(22,60)*s, rr(9,20)*s, 0,0,TAU);
-        g.fill();
+    // layered cumulus: dark base, lit crown, sun-side rim
+    for(var i=0;i<30;i++){
+      var cx=rnd()*w, cy=rr(24,178), s=rr(.55,1.9);
+      var puffs=ri(7,12), pts=[];
+      for(var p=0;p<puffs;p++)
+        pts.push([cx+rr(-78,78)*s, cy+rr(-11,15)*s, rr(20,52)*s, rr(11,24)*s]);
+      g.fillStyle='rgba(176,196,214,.34)';
+      for(var p2=0;p2<pts.length;p2++){
+        g.beginPath(); g.ellipse(pts[p2][0],pts[p2][1]+7*s,pts[p2][2],pts[p2][3],0,0,TAU); g.fill(); }
+      g.fillStyle='rgba(255,255,255,.62)';
+      for(var p3=0;p3<pts.length;p3++){
+        g.beginPath(); g.ellipse(pts[p3][0],pts[p3][1],pts[p3][2]*.94,pts[p3][3]*.88,0,0,TAU); g.fill(); }
+      g.fillStyle='rgba(255,248,226,.5)';
+      for(var p4=0;p4<pts.length;p4++){
+        g.beginPath(); g.ellipse(pts[p4][0]-pts[p4][2]*.16,pts[p4][1]-pts[p4][3]*.34,
+          pts[p4][2]*.55,pts[p4][3]*.45,0,0,TAU); g.fill(); }
+    }
+    // high cirrus streaks
+    g.save(); g.globalAlpha=.20;
+    for(var ci=0;ci<26;ci++){
+      g.fillStyle='#fff';
+      g.beginPath(); g.ellipse(rnd()*w, rr(8,70), rr(60,190), rr(1.5,4.5), rr(-.06,.06),0,TAU); g.fill();
+    }
+    g.restore();
+    // crisp distant skyline: two parallax bands of towers
+    function skyline(baseY,scale,col,detail){
+      var x=0;
+      while(x<w){
+        var bw=rr(16,54)*scale, bh=rr(20,86)*scale;
+        g.fillStyle=col;
+        g.fillRect(x,baseY-bh,bw,bh);
+        if(detail){
+          g.fillStyle='rgba(255,255,255,.10)';
+          for(var wy=baseY-bh+5; wy<baseY-4; wy+=7)
+            for(var wx=x+3; wx<x+bw-3; wx+=6) if(rnd()<.5) g.fillRect(wx,wy,2.5,3);
+          g.fillStyle=col;
+        }
+        if(rnd()<.28){ g.fillRect(x+bw*0.4, baseY-bh-rr(6,22)*scale, 2.5*scale, rr(6,22)*scale); }
+        x+=bw+rr(1,7)*scale;
       }
     }
-    // distant skyline haze
-    g.fillStyle='rgba(190,208,218,.75)';
-    for(var x=0;x<w;x+=1){
-      var hgt=26+18*sin(x*0.013)+12*sin(x*0.041+1.4)+8*sin(x*0.0073);
-      g.fillRect(x,h-hgt,1,hgt);
+    skyline(h-16, 1.25, 'rgba(150,172,192,.55)', false);
+    skyline(h-6,  0.95, 'rgba(118,142,166,.72)', true);
+    // ridge line of trees / low structures right at the horizon
+    g.fillStyle='rgba(96,118,132,.55)';
+    for(var t2=0;t2<w;t2+=3){
+      var th=4+3*sin(t2*0.09)+2.5*sin(t2*0.31+1.1)+rnd()*2;
+      g.fillRect(t2,h-th-2,3,th+2);
     }
-    g.fillStyle='rgba(150,172,188,.55)';
-    for(var b=0;b<70;b++){ var bx=rnd()*w, bw=rr(14,46), bh=rr(16,58);
-      g.fillRect(bx,h-bh-6,bw,bh); }
-    var hz=g.createLinearGradient(0,h-70,0,h);
-    hz.addColorStop(0,'rgba(226,238,244,0)'); hz.addColorStop(1,'rgba(226,238,244,.95)');
-    g.fillStyle=hz; g.fillRect(0,h-70,w,70);
+    // gentle horizon haze -- much lighter than before so distance stays legible
+    var hz=g.createLinearGradient(0,h-54,0,h);
+    hz.addColorStop(0,'rgba(214,229,241,0)'); hz.addColorStop(1,'rgba(214,229,241,.72)');
+    g.fillStyle=hz; g.fillRect(0,h-54,w,54);
   });
 }
 
@@ -1078,6 +1212,16 @@ function fxSpawn(o){
     add:o.add||0, spin:o.spin||0, fade:o.fade===undefined?1:o.fade,
     grow:o.grow||0, a0:o.a0===undefined?1:o.a0 });
 }
+/* glowing tracer beads strung along the bullet path */
+function tracer(x0,y0,z0,dx,dy,dz,dist,hot){
+  var n=min(10, max(3, (dist*0.55)|0));
+  for(var i=1;i<=n;i++){
+    var f=i/n, t=f*dist;
+    fxSpawn({x:x0+dx*t, y:y0+dy*t, z:z0+dz*t,
+      life:0.05+0.03*f, spr:SPR.spark, size:0.042-0.018*f,
+      add:1, a0:hot?0.95:0.55, grav:0});
+  }
+}
 function decal(x,y,z,side){
   if(DECALS.length>90) DECALS.shift();
   DECALS.push({x:x,y:y,z:z,life:26,max:26,side:side,size:0.10+rnd()*0.05});
@@ -1316,6 +1460,8 @@ function botFire(b,tx,ty,tz){
   var pan=panOf(b.x,b.y), vol=volOf(b.x,b.y);
   SND.gunshot(d.snd,pan,vol);
   fxSpawn({x:b.x+ndx*0.42,y:b.y+ndy*0.42,z:0.66,life:0.055,spr:SPR.flash,size:0.30,add:1});
+  addLight(b.x+ndx*0.5, b.y+ndy*0.5, 0.62, 1.0,0.82,0.45, 1.5, 0.06);
+  tracer(b.x+ndx*0.5, b.y+ndy*0.5, 0.62, ndx,ndy,dz, min(r.wallD, d.range+8), false);
   b.mag--; b.lastFire=G.t;
   var hitSomething=false;
   for(var i=0;i<r.hits.length;i++){
@@ -1466,11 +1612,44 @@ function volOf(x,y){ var d=dist2P(x,y); return clamp(1.35/(1+d*0.20),0,1); }
    ============================================================================ */
 var RC=document.createElement('canvas'), RCTX=RC.getContext('2d',{alpha:false});
 var IMG=null, BUF=null, DEPTH=null, RW=0, RH=0, VW=0, VH=0;
-var CAM={x:0,y:0,ang:0,pitch:0,eye:0.56,tanHalf:0.75,proj:1,horizon:0,
+var CAM={x:0,y:0,ang:0,pitch:0,eye:0.56,tanHalf:0.75,proj:1,cy:0,cosP:1,sinP:0,
          dirX:1,dirY:0,planeX:0,planeY:1};
+var SKYV=null;                 // per-row sky texture row, rebuilt each frame
+var PITCH_LIMIT=1.45;          // ~83 deg up/down -- a real 3D look range
 var SHAKE={x:0,y:0,m:0,r:0};
-var FOG_R=226, FOG_G=238, FOG_B=244;
-var FOGC=(255<<24)|(244<<16)|(238<<8)|226;
+var FOG_R=214, FOG_G=229, FOG_B=241;
+var FOGC=(255<<24)|(241<<16)|(229<<8)|214;
+
+/* ---- dynamic point lights (muzzle flashes, explosions, streak fire) ---- */
+var LIGHTS=[], LIGHT_MAX=4;
+function addLight(x,y,z,r,g,b,power,life){
+  if(LIGHTS.length>=LIGHT_MAX) LIGHTS.shift();
+  LIGHTS.push({x:x,y:y,z:z,r:r,g:g,b:b,p:power,life:life,max:life});
+}
+function updateLights(dt){
+  for(var i=LIGHTS.length-1;i>=0;i--){
+    LIGHTS[i].life-=dt;
+    if(LIGHTS[i].life<=0) LIGHTS.splice(i,1);
+  }
+}
+
+/* ---- bloom + colour grade ---------------------------------------------- */
+var BLOOM=null, BLOOM2=null, BW=0, BH=0;
+var LUT_R=new Uint8Array(256), LUT_G=new Uint8Array(256), LUT_B=new Uint8Array(256);
+(function buildLUT(){
+  for(var i=0;i<256;i++){
+    var v=i/255;
+    // gentle filmic S-curve, then a warm-highlight / cool-shadow grade
+    var s=v*v*(3-2*v);
+    v=v*0.55+s*0.45;
+    var r=v*1.045+0.010*(1-v);
+    var g=v*1.000+0.004*(1-v);
+    var b=v*0.962+0.022*(1-v);
+    LUT_R[i]=clamp(r*255,0,255)|0;
+    LUT_G[i]=clamp(g*255,0,255)|0;
+    LUT_B[i]=clamp(b*255,0,255)|0;
+  }
+})();
 var SUNX=0.55, SUNY=-0.84;
 
 function shakeAdd(v){ SHAKE.m=min(1.4, SHAKE.m+v*S.shake); }
@@ -1486,12 +1665,17 @@ function resizeRender(){
   IMG=RCTX.createImageData(RW,RH);
   BUF=new Uint32Array(IMG.data.buffer);
   DEPTH=new Float32Array(RW*RH);
+  SKYV=new Int32Array(RH);
+  BW=max(4,RW>>2); BH=max(4,RH>>2);
+  BLOOM=new Float32Array(BW*BH*3);
+  BLOOM2=new Float32Array(BW*BH*3);
   vctx.imageSmoothingEnabled=true;
   fctx.imageSmoothingEnabled=true;
 }
 window.addEventListener('resize',function(){ resizeRender(); });
 
 function initRenderExtras(){
+  buildGrain();
   SPR.hole=TEX(24,24,function(g,w,h){
     var gr=g.createRadialGradient(12,12,0,12,12,11);
     gr.addColorStop(0,'rgba(10,10,12,.95)'); gr.addColorStop(.45,'rgba(30,30,34,.8)');
@@ -1515,18 +1699,30 @@ function render3D(){
   var tanHalf=Math.tan(fov*0.5);
   var proj=(RW*0.5)/tanHalf;
   var eye = P.eye + P.z;
-  var pitchPix = Math.tan(clamp(P.pitch,-0.92,0.92))*proj;
-  var horizon = RH*0.5 + pitchPix + SHAKE.y*RH*0.04 + P.bob*RH*0.010;
+  /* --- true 3D camera -------------------------------------------------
+     Pitch is a real rotation of the view basis, not a vertical shear, so
+     verticals converge properly when you look up or down. A world point at
+     horizontal distance d and height z projects through:
+        f' =  d*cosP + (z-eye)*sinP        (depth along the pitched axis)
+        u' = -d*sinP + (z-eye)*cosP        (height along the pitched axis)
+        screenY = cy - (u'/f')*proj
+     and the inverse, used per pixel to recover z:
+        z = eye + d*(s*cosP + sinP) / (cosP - s*sinP),  s = (cy-y)/proj   */
+  var pitch = clamp(P.pitch,-PITCH_LIMIT,PITCH_LIMIT);
+  var cosP=cos(pitch), sinP=sin(pitch);
+  var cy = RH*0.5 + SHAKE.y*RH*0.04 + P.bob*RH*0.010;
+  var horizon = cy + (sinP/cosP)*proj;      // where eye level lands on screen
 
-  CAM.x=P.x; CAM.y=P.y; CAM.ang=P.ang+SHAKE.x*0.03; CAM.pitch=P.pitch;
-  CAM.eye=eye; CAM.tanHalf=tanHalf; CAM.proj=proj; CAM.horizon=horizon;
+  CAM.x=P.x; CAM.y=P.y; CAM.ang=P.ang+SHAKE.x*0.03; CAM.pitch=pitch;
+  CAM.eye=eye; CAM.tanHalf=tanHalf; CAM.proj=proj; CAM.cy=cy;
+  CAM.cosP=cosP; CAM.sinP=sinP;
   CAM.dirX=cos(CAM.ang); CAM.dirY=sin(CAM.ang);
   CAM.planeX=-CAM.dirY*tanHalf; CAM.planeY=CAM.dirX*tanHalf;
 
   var dirX=CAM.dirX, dirY=CAM.dirY, planeX=CAM.planeX, planeY=CAM.planeY;
   var px=P.x, py=P.y;
   var buf=BUF, dep=DEPTH;
-  var hor=horizon|0;
+  var invProj=1/proj;
 
   // Prefill: guarantees every pixel is defined even if a pass skips a row
   // (fractional horizon, extreme pitch, rays leaving the map). Two typed-array
@@ -1534,31 +1730,41 @@ function render3D(){
   buf.fill(FOGC); dep.fill(1e9);
 
   /* ---------------- SKY ---------------------------------------------- */
-  var skyPx=SKY.px, skyScale=SKYH/(RH*0.92);
-  // ceil() so the row straddling the horizon is always painted: the floor pass
-  // skips rows whose p < 0.6, which would otherwise leave a bare scanline
-  var yTop=0, yBot=min(RH-1, Math.ceil(horizon));
+  /* Rows above the horizon look up into the sky dome. The vertical angle
+     depends only on the row, so the texture row is precomputed per scanline
+     and the elevation maps 0..90 deg onto the strip -- look straight up and
+     you get the zenith instead of running off the top of the texture. */
+  var skyPx=SKY.px;
+  var yBot=min(RH-1, Math.ceil(horizon));
+  for(var ys=0; ys<=yBot; ys++){
+    var s0=(cy-ys)*invProj;
+    var dv=sinP+s0*cosP, dh=cosP-s0*sinP;
+    var elev=atan2(dv, dh>1e-6?dh:1e-6);          // 0 at horizon, PI/2 at zenith
+    var vv=(1-clamp(elev/(PI*0.5),0,1))*(SKYH-1);
+    SKYV[ys]=vv|0;
+  }
   for(var x=0;x<RW;x++){
     var camX=2*x/RW-1;
     var rdx=dirX+planeX*camX, rdy=dirY+planeY*camX;
     var a=atan2(rdy,rdx)/TAU; a-=floor(a);
     var su=(a*SKYW)|0; if(su<0)su=0; if(su>=SKYW)su=SKYW-1;
-    for(var y=yTop;y<=yBot;y++){
-      var v=SKYH-1-(horizon-y)*skyScale;
-      if(v<0)v=0; else if(v>SKYH-1)v=SKYH-1;
+    for(var y=0;y<=yBot;y++){
       var i=y*RW+x;
-      buf[i]=skyPx[(v|0)*SKYW+su];
+      buf[i]=skyPx[SKYV[y]*SKYW+su];
       dep[i]=1e9;
     }
   }
-  if(hor<0){ /* looking far down: sky not visible */ }
 
   /* ---------------- FLOOR --------------------------------------------- */
   var rx0=dirX-planeX, ry0=dirY-planeY, rx1=dirX+planeX, ry1=dirY+planeY;
-  var fogStart=9, fogSpan=1/34;
-  for(var y2=max(0,hor+1); y2<RH; y2++){
-    var p=y2-horizon; if(p<0.6) continue;
-    var rowD=eye*proj/p;
+  var fogStart=16, fogSpan=1/58;      // lighter haze: distance stays readable
+  for(var y2=max(0,yBot); y2<RH; y2++){
+    // ray elevation for this scanline; only rows aimed below eye level hit ground
+    var sf=(cy-y2)*invProj;
+    var dvf=sinP+sf*cosP, dhf=cosP-sf*sinP;
+    if(dvf>=-1e-4||dhf<=1e-6) continue;
+    var rowD=eye*dhf/(-dvf);
+    if(rowD<0.02) continue;
     if(rowD>62){ // beyond the fog wall -> flat haze
       var iRow=y2*RW;
       for(var xf=0;xf<RW;xf++){ buf[iRow+xf]=FOGC; dep[iRow+xf]=rowD; }
@@ -1568,21 +1774,30 @@ function render3D(){
     var fX=px+rowD*rx0, fY=py+rowD*ry0;
     var fog=clamp((rowD-fogStart)*fogSpan,0,1); fog*=fog*0.92;
     var fr=FOG_R*fog, fg=FOG_G*fog, fb=FOG_B*fog, base=(1-fog);
-    var row=y2*RW;
+    var row=y2*RW, nL=LIGHTS.length;
     for(var x2=0;x2<RW;x2++){
       // floor() not |0: for coords in (-1,0) truncation would pass the bounds
-      // check and then index the texture negatively
-      var cx=floor(fX), cy=floor(fY), o=row+x2;
-      if(cx>=0&&cy>=0&&cx<MW&&cy<MH){
-        var ti=idx(cx,cy);
+      // check and then index the texture negatively.
+      // NB: tile coords must NOT be named cy -- `var` is function scoped and
+      // would clobber the camera centre used by every later scanline.
+      var tcx=floor(fX), tcy=floor(fY), o=row+x2;
+      if(tcx>=0&&tcy>=0&&tcx<MW&&tcy<MH){
+        var ti=idx(tcx,tcy);
         var t=FLOORTEX[FLR[ti]]||FLOORTEX[0];
-        var tx=((fX-cx)*TS)|0, ty=((fY-cy)*TS)|0;
+        var tx=((fX-tcx)*TS)|0, ty=((fY-tcy)*TS)|0;
         var c=t.px[ty*TS+tx];
         var sh=base*LIGHT[ti];
+        var lr=0,lg=0,lb=0;
+        for(var li=0;li<nL;li++){
+          var L=LIGHTS[li];
+          var ldx=L.x-fX, ldy=L.y-fY;
+          var att=L.p*(L.life/L.max)/(1+(ldx*ldx+ldy*ldy+L.z*L.z)*1.3);
+          if(att>0.004){ lr+=L.r*att; lg+=L.g*att; lb+=L.b*att; }
+        }
         buf[o]=(255<<24)|
-          ((((c>>16&255)*sh+fb)|0)<<16)|
-          ((((c>>8&255)*sh+fg)|0)<<8)|
-          (((c&255)*sh+fr)|0);
+          ((((c>>16&255)*(sh+lb)+fb)|0)<<16)|
+          ((((c>>8&255)*(sh+lg)+fg)|0)<<8)|
+          (((c&255)*(sh+lr)+fr)|0);
       } else {
         buf[o]=FOGC;               // ground outside the arena -> horizon haze
       }
@@ -1623,9 +1838,13 @@ function render3D(){
       var d=hitsD[k]; if(d<0.02) d=0.02;
       var code=hitsT[k], hgt=WALLH[code]||1;
       var tex=WALLTEX[code]||WALLTEX[1];
-      var yb=horizon+(eye)*proj/d;
-      var yt=horizon+(eye-hgt)*proj/d;
-      var y0=yt|0, y1=yb|0;
+      // project the wall's foot (z=0) and head (z=hgt) through the pitched camera
+      var fb=d*cosP+(0-eye)*sinP,    ub=-d*sinP+(0-eye)*cosP;
+      var ft=d*cosP+(hgt-eye)*sinP,  ut=-d*sinP+(hgt-eye)*cosP;
+      var yb = fb>1e-4 ? cy-(ub/fb)*proj : (ub>0?-1e7:1e7);
+      var yt = ft>1e-4 ? cy-(ut/ft)*proj : (ut>0?-1e7:1e7);
+      if(yt>yb){ var sw=yt; yt=yb; yb=sw; }
+      var y0=Math.ceil(yt), y1=floor(yb);
       if(y1<0||y0>=RH) continue;
       var rep=hgt>1.6?2:1;
       var texX=(hitsW[k]*TS)|0; if(texX<0)texX=0; if(texX>=TS)texX=TS-1;
@@ -1634,25 +1853,37 @@ function render3D(){
       var nx = sd===0?hitsN[k]:0, ny = sd===1?hitsN[k]:0;
       var sun = max(0, nx*SUNX+ny*SUNY);
       var sh = ((sd===0?1.0:0.86) + sun*0.22) * (0.72+0.28*LIGHT[hitsI[k]]);
+      // dynamic lights, evaluated once at the wall hit point for this column
+      var hx=px+rdx2*d, hy=py+rdy2*d, lr2=0, lg2=0, lb2=0;
+      for(var li2=0;li2<LIGHTS.length;li2++){
+        var L2=LIGHTS[li2];
+        var lx2=L2.x-hx, ly2=L2.y-hy;
+        var at2=L2.p*(L2.life/L2.max)/(1+(lx2*lx2+ly2*ly2)*1.3);
+        if(at2>0.004){ lr2+=L2.r*at2; lg2+=L2.g*at2; lb2+=L2.b*at2; }
+      }
       var fog2=clamp((d-fogStart)*fogSpan,0,1); fog2*=fog2*0.92;
       var a2=sh*(1-fog2);
+      var ar=(sh+lr2)*(1-fog2), ag=(sh+lg2)*(1-fog2), ab=(sh+lb2)*(1-fog2);
       var fr2=FOG_R*fog2, fg2=FOG_G*fog2, fb2=FOG_B*fog2;
       var yA=y0<0?0:y0, yB=y1>=RH?RH-1:y1;
-      var invH=1/(yb-yt);
       var col32=tex.px;
+      var vScale=rep/hgt;
+      var sp=(cy-yA)*invProj, spStep=-invProj;
       // hits are drawn far -> near, so nearer walls simply overwrite; testing
       // against the floor's depth here would punch floor-coloured specks
       // through wall bases where rowDistance ~= perpWallDist.
-      for(var y3=yA;y3<=yB;y3++){
+      for(var y3=yA;y3<=yB;y3++, sp+=spStep){
         var o2=y3*RW+col;
-        var f=(yb-y3)*invH;                 // 0 at top .. 1 at bottom
-        var vv=((1-f)*rep)%1;
+        // recover the world height this pixel sees, then wrap it into the texture
+        var den=cosP-sp*sinP;
+        var zw=eye+d*(sp*cosP+sinP)/(den!==0?den:1e-6);
+        var vv=zw*vScale; vv-=floor(vv);
         var ty2=(vv*TS)|0; if(ty2<0)ty2=0; else if(ty2>=TS)ty2=TS-1;
-        var c2=col32[ty2*TS+texX];
+        var c2=col32[(TS-1-ty2)*TS+texX];
         buf[o2]=(255<<24)|
-          ((((c2>>16&255)*a2+fb2)|0)<<16)|
-          ((((c2>>8&255)*a2+fg2)|0)<<8)|
-          (((c2&255)*a2+fr2)|0);
+          ((((c2>>16&255)*ab+fb2)|0)<<16)|
+          ((((c2>>8&255)*ag+fg2)|0)<<8)|
+          (((c2&255)*ar+fr2)|0);
         dep[o2]=d;
       }
     }
@@ -1698,23 +1929,98 @@ function render3D(){
   }
   list.sort(function(a,b){return b.d-a.d;});
   var invDet=1/(planeX*dirY-dirX*planeY);
-  for(var s2=0;s2<list.length;s2++) drawSprite(list[s2],invDet,px,py,proj,horizon,eye);
+  for(var s2=0;s2<list.length;s2++) drawSprite(list[s2],invDet,px,py,proj,cy,eye,cosP,sinP);
 
+  postProcess();
   RCTX.putImageData(IMG,0,0);
   vctx.drawImage(RC,0,0,RW,RH,0,0,VW,VH);
 }
 
-function drawSprite(s,invDet,px,py,proj,horizon,eye){
+/* ---------------------------------------------------------------------------
+   Post: bright-pass bloom at quarter res, then composite + filmic grade.
+   Two full-buffer passes; the blur itself runs on 1/16th the pixels.
+   --------------------------------------------------------------------------- */
+function postProcess(){
+  var buf=BUF, n=RW*RH;
+  var doBloom = S.bloom!==0;
+  if(doBloom){
+    var bl=BLOOM, b2=BLOOM2, i, j;
+    for(i=0;i<bl.length;i++) bl[i]=0;
+    // bright pass, quarter-res nearest sample
+    for(var by=0;by<BH;by++){
+      var syy=(by<<2)*RW, row=by*BW*3;
+      for(var bx=0;bx<BW;bx++){
+        var c=buf[syy+(bx<<2)];
+        var r=c&255, g=c>>8&255, b=c>>16&255;
+        var lum=r*0.299+g*0.587+b*0.114;
+        if(lum>188){
+          var e=(lum-188)/67; if(e>1.6)e=1.6;
+          var o=row+bx*3;
+          bl[o]=r*e; bl[o+1]=g*e; bl[o+2]=b*e;
+        }
+      }
+    }
+    // separable blur (radius 2) -> b2 -> bl
+    for(var y1=0;y1<BH;y1++){
+      var ro=y1*BW*3;
+      for(var x1=0;x1<BW;x1++){
+        var sr=0,sg=0,sb=0,cnt=0;
+        for(var k=-2;k<=2;k++){
+          var xx=x1+k; if(xx<0||xx>=BW) continue;
+          var oo=ro+xx*3; sr+=bl[oo]; sg+=bl[oo+1]; sb+=bl[oo+2]; cnt++;
+        }
+        var op=ro+x1*3; b2[op]=sr/cnt; b2[op+1]=sg/cnt; b2[op+2]=sb/cnt;
+      }
+    }
+    for(var y2=0;y2<BH;y2++){
+      for(var x2=0;x2<BW;x2++){
+        var sr2=0,sg2=0,sb2=0,c2=0;
+        for(var k2=-2;k2<=2;k2++){
+          var yy=y2+k2; if(yy<0||yy>=BH) continue;
+          var o2=(yy*BW+x2)*3; sr2+=b2[o2]; sg2+=b2[o2+1]; sb2+=b2[o2+2]; c2++;
+        }
+        var op2=(y2*BW+x2)*3; bl[op2]=sr2/c2; bl[op2+1]=sg2/c2; bl[op2+2]=sb2/c2;
+      }
+    }
+  }
+  // composite + saturation + grade
+  var amt=S.bloom===undefined?0.42:S.bloom;
+  for(var y=0;y<RH;y++){
+    var brow=((y>>2)*BW)*3, orow=y*RW;
+    for(var x=0;x<RW;x++){
+      var p=buf[orow+x];
+      var R=p&255, G=p>>8&255, B=p>>16&255;
+      if(doBloom){
+        var bo=brow+((x>>2)*3);
+        R+=BLOOM[bo]*amt; G+=BLOOM[bo+1]*amt; B+=BLOOM[bo+2]*amt;
+      }
+      // subtle saturation lift
+      var l=R*0.299+G*0.587+B*0.114;
+      R=l+(R-l)*1.13; G=l+(G-l)*1.13; B=l+(B-l)*1.13;
+      if(R<0)R=0; else if(R>255)R=255;
+      if(G<0)G=0; else if(G>255)G=255;
+      if(B<0)B=0; else if(B>255)B=255;
+      buf[orow+x]=(255<<24)|(LUT_B[B|0]<<16)|(LUT_G[G|0]<<8)|LUT_R[R|0];
+    }
+  }
+}
+
+function drawSprite(s,invDet,px,py,proj,cy,eye,cosP,sinP){
   var sx=s.x-px, sy=s.y-py;
   var dirX=CAM.dirX, dirY=CAM.dirY, planeX=CAM.planeX, planeY=CAM.planeY;
   var tX=invDet*(dirY*sx-dirX*sy);
   var tY=invDet*(-planeY*sx+planeX*sy);
   if(tY<0.12) return;
   var scrX=(RW*0.5)*(1+tX/tY);
-  var hPix=s.h*proj/tY, wPix=s.w*proj/tY;
+  var wPix=s.w*proj/tY;
+  // project the billboard's foot and head through the same pitched camera
+  var zb=s.z, zt=s.z+s.h;
+  var fb=tY*cosP+(zb-eye)*sinP, ub=-tY*sinP+(zb-eye)*cosP;
+  var ft=tY*cosP+(zt-eye)*sinP, ut=-tY*sinP+(zt-eye)*cosP;
+  if(fb<0.05||ft<0.05) return;
+  var yBot=cy-(ub/fb)*proj, yTop=cy-(ut/ft)*proj;
+  var hPix=yBot-yTop;
   if(wPix<0.7||hPix<0.7) return;
-  var yBot=horizon+(eye-s.z)*proj/tY;
-  var yTop=yBot-hPix;
   var x0=(scrX-wPix*0.5)|0, x1=(scrX+wPix*0.5)|0;
   var y0=yTop|0, y1=yBot|0;
   if(x1<0||x0>=RW||y1<0||y0>=RH) return;
@@ -1755,9 +2061,89 @@ var VM={ sx:0, sy:0, swayX:0, swayY:0, bobX:0, bobY:0, kick:0, kickA:0,
          boltT:0, reloadT:0, flash:0, flashA:0, swapT:0 };
 var HITMARK={t:0, hs:0, kill:0};
 
+var SUN_AZ=(300/1024)*TAU, SUN_EL=1.22;   // matches the sun painted into the sky
+var GRAINTILE=null;
+function buildGrain(){
+  GRAINTILE=document.createElement('canvas');
+  GRAINTILE.width=GRAINTILE.height=128;
+  var g=GRAINTILE.getContext('2d');
+  var im=g.createImageData(128,128), d=im.data;
+  for(var i=0;i<d.length;i+=4){
+    var v=190+rnd()*65|0;
+    d[i]=d[i+1]=d[i+2]=v; d[i+3]=255;
+  }
+  g.putImageData(im,0,0);
+}
+/* project a world direction (azimuth/elevation) to screen, or null if behind */
+function projectDir(az,el){
+  var rel=az-CAM.ang;
+  var ce=cos(el);
+  var fwd=cos(rel)*ce, rgt=sin(rel)*ce, up=sin(el);
+  var f= fwd*CAM.cosP + up*CAM.sinP;
+  if(f<0.06) return null;
+  var u=-fwd*CAM.sinP + up*CAM.cosP;
+  var ps=(VW*0.5)/CAM.tanHalf;
+  return { x: VW*0.5 + (rgt/f)*ps,
+           y: CAM.cy*(VH/RH) - (u/f)*ps, f:f };
+}
+function drawSunFlare(){
+  if(!S.flare) return;
+  var p=projectDir(SUN_AZ,SUN_EL);
+  if(!p) return;
+  if(p.x<-VW*0.4||p.x>VW*1.4||p.y<-VH*0.4||p.y>VH*1.4) return;
+  var g=fctx;
+  var cxs=VW*0.5, cys=VH*0.5;
+  var off=sqrt((p.x-cxs)*(p.x-cxs)+(p.y-cys)*(p.y-cys));
+  var fade=clamp(1-off/(VW*0.75),0,1);
+  if(fade<=0.01) return;
+  g.save();
+  g.globalCompositeOperation='lighter';
+  var r0=VH*0.30*fade;
+  var gr=g.createRadialGradient(p.x,p.y,0,p.x,p.y,r0);
+  gr.addColorStop(0,'rgba(255,250,225,'+(0.42*fade)+')');
+  gr.addColorStop(.25,'rgba(255,225,160,'+(0.16*fade)+')');
+  gr.addColorStop(1,'rgba(255,200,120,0)');
+  g.fillStyle=gr; g.beginPath(); g.arc(p.x,p.y,r0,0,TAU); g.fill();
+  // ghosts strung back through the screen centre
+  var ghosts=[[0.32,26,'rgba(140,200,255,'],[0.62,15,'rgba(255,190,120,'],
+              [0.90,22,'rgba(180,255,200,'],[1.26,11,'rgba(255,150,150,']];
+  for(var i=0;i<ghosts.length;i++){
+    var t=ghosts[i][0];
+    var gx=p.x+(cxs-p.x)*t*2, gy=p.y+(cys-p.y)*t*2;
+    g.fillStyle=ghosts[i][2]+(0.075*fade)+')';
+    g.beginPath(); g.arc(gx,gy,ghosts[i][1]*fade+4,0,TAU); g.fill();
+  }
+  g.restore();
+}
+function drawGrain(){
+  if(!S.grain||!GRAINTILE) return;
+  var g=fctx;
+  g.save();
+  g.globalCompositeOperation='overlay';
+  g.globalAlpha=0.045;
+  var ox=-(rnd()*128)|0, oy=-(rnd()*128)|0;
+  var pat=g.createPattern(GRAINTILE,'repeat');
+  g.fillStyle=pat;
+  g.translate(ox,oy);
+  g.fillRect(0,0,VW+128,VH+128);
+  g.restore();
+}
+function drawVignette(){
+  var g=fctx;
+  var gr=g.createRadialGradient(VW*0.5,VH*0.5,VH*0.32,VW*0.5,VH*0.5,VH*0.92);
+  gr.addColorStop(0,'rgba(0,0,0,0)');
+  gr.addColorStop(1,'rgba(0,0,0,.42)');
+  g.fillStyle=gr; g.fillRect(0,0,VW,VH);
+}
+
 function drawOverlay(dt){
   fctx.clearRect(0,0,VW,VH);
   var w=W(), ads=easeAds(P.ads);
+
+  /* --- atmospherics behind the weapon --- */
+  drawSunFlare();
+  drawVignette();
+  drawGrain();
 
   /* --- weapon --- */
   if(!(w.def.scope && P.ads>0.86) && P.alive) drawViewmodel(w,ads);
@@ -2099,11 +2485,11 @@ document.addEventListener('keydown',function(e){
   if(G.mode!=='play') return;
   if(e.code===S.binds.reload) startReload();
   if(e.code===S.binds.swap) swapWeapon((P.cur+1)%P.weapons.length);
-  if(e.code==='Digit1') swapWeapon(0);
-  if(e.code==='Digit2') swapWeapon(1);
-  if(e.code==='Digit3') useStreak(0);
-  if(e.code==='Digit4') useStreak(1);
-  if(e.code==='Digit5') useStreak(2);
+  if(e.code===S.binds.wpn1) swapWeapon(0);
+  if(e.code===S.binds.wpn2) swapWeapon(1);
+  if(e.code===S.binds.ks1) useStreak(0);
+  if(e.code===S.binds.ks2) useStreak(1);
+  if(e.code===S.binds.ks3) useStreak(2);
   if(e.code===S.binds.melee) melee();
   if(e.code===S.binds.score) D.board.classList.remove('hidden');
 },false);
@@ -2131,14 +2517,14 @@ document.addEventListener('wheel',function(e){
 
 document.addEventListener('pointerlockchange',function(){
   LOCKED = (document.pointerLockElement===view);
-  if(!LOCKED && G.mode==='play') pause();
+  if(!LOCKED && G.mode==='play' && !MOBILE) pause();
 });
 document.addEventListener('mousemove',function(e){
   if(!LOCKED||G.mode!=='play') return;
   var mult = S.sens*0.0022*lerp(1,S.adsSens,easeAds(P.ads));
   P.ang += e.movementX*mult;
   P.pitch += (S.invertY?1:-1)*e.movementY*mult*0.85;
-  P.pitch = clamp(P.pitch,-0.92,0.92);
+  P.pitch = clamp(P.pitch,-PITCH_LIMIT,PITCH_LIMIT);
   if(P.ang>PI) P.ang-=TAU; if(P.ang<-PI) P.ang+=TAU;
   VM.swayX = clamp(VM.swayX - e.movementX*0.32, -46, 46);
   VM.swayY = clamp(VM.swayY - e.movementY*0.24, -34, 34);
@@ -2206,6 +2592,10 @@ function fire(){
   P.recoilH += rr(-d.recoilH,d.recoilH);
   shakeAdd(d.cls==='SNIPER'?0.30:0.07);
   fxSpawn({x:P.x+dx*0.5,y:P.y+dy*0.5,z:eyeZ,life:0.05,spr:SPR.flash,size:0.22,add:1});
+  addLight(P.x+dx*0.6, P.y+dy*0.6, eyeZ, 1.0,0.85,0.5,
+           d.cls==='SNIPER'?3.0:1.9, d.cls==='SNIPER'?0.09:0.06);
+  tracer(P.x+dx*0.7, P.y+dy*0.7, eyeZ-0.05, dx,dy,dz,
+         min(r.wallD, d.range+22), true);
   // --- resolve hits -------------------------------------------------------
   var killedThisShot=0, hitAny=false, hs=false;
   for(var i=0;i<r.hits.length;i++){
@@ -2263,9 +2653,11 @@ function updatePlayer(dt){
   var fx2=0, fy2=0;
   var mf=(down('fwd')?1:0)-(down('back')?1:0);
   var ms=(down('right')?1:0)-(down('left')?1:0);
-  var wantSprint = down('sprint') && mf>0 && P.ads<0.2 && w.st!=='reload';
+  if(TOUCH.on){ mf+=TOUCH.my; ms+=TOUCH.mx; }
+  mf=clamp(mf,-1,1); ms=clamp(ms,-1,1);
+  var wantSprint = (down('sprint')||TOUCH.sprint) && mf>0.4 && P.ads<0.2 && w.st!=='reload';
   P.sprint=approach(P.sprint, wantSprint?1:0, dt*(wantSprint?4:8));
-  P.crouching = down('crouch');
+  P.crouching = down('crouch')||!!TOUCH.crouch;
   P.crouchT=approach(P.crouchT, P.crouching?1:0, dt*7);
   P.eye = lerp(0.58, 0.34, P.crouchT);
   var base = 3.55*d.moveMul;
@@ -2284,7 +2676,8 @@ function updatePlayer(dt){
   moveEnt(P,P.vx*dt,P.vy*dt,P.radius);
   var moved=sqrt((P.x-oldx)*(P.x-oldx)+(P.y-oldy)*(P.y-oldy));
   /* ---- jump / vertical ---- */
-  if(down('jump')&&P.z<=0.001&&P.vz===0){ P.vz=3.05; SND.step(0.5,0); }
+  if((down('jump')||TOUCH.jump)&&P.z<=0.001&&P.vz===0){ P.vz=3.05; SND.step(0.5,0); }
+  TOUCH.jump=0;
   if(P.vz!==0||P.z>0){
     P.vz-=11.5*dt; P.z+=P.vz*dt;
     if(P.z<=0){ P.z=0; if(P.vz<-1.2) SND.step(0.8,0); P.vz=0; }
@@ -2305,7 +2698,7 @@ function updatePlayer(dt){
   P.ang   += P.recoilH*dt*10;
   P.recoilV=approach(P.recoilV,0,dt*(P.recoilV>0?2.2:6.0));
   P.recoilH=approach(P.recoilH,0,dt*2.0);
-  P.pitch = clamp(P.pitch,-0.92,0.92);
+  P.pitch = clamp(P.pitch,-PITCH_LIMIT,PITCH_LIMIT);
   /* ---- weapon state machine ---- */
   if(w.t>0) w.t-=dt;
   if(w.st==='bolt'){
@@ -2384,7 +2777,7 @@ function updatePickupPrompt(dt){
     D.pick.classList.add('on');
     D.pickKey.textContent=keyLabel(S.binds.interact);
     D.pickTxt.textContent='for '+def.name+(def.attach?' '+def.attach:'');
-    if(down('interact')){
+    if(down('interact')||TOUCH.interact){
       pickHold+=dt;
       D.pickFill.style.width=clamp(pickHold/0.7,0,1)*100+'%';
       if(pickHold>=0.7){
@@ -2559,6 +2952,7 @@ function updateStreaks(dt){
 function explode(x,y,z,radius,dmg,owner){
   SND.explode(panOf(x,y), volOf(x,y));
   shakeAdd(clamp(1.6/(1+dist2P(x,y)*0.4),0,0.55));
+  addLight(x,y,z+0.4, 1.0,0.55,0.18, 9, 0.5);
   for(var i=0;i<26;i++){
     var a=rnd()*TAU, sp=rr(1,7);
     fxSpawn({x:x,y:y,z:z+0.1, vx:cos(a)*sp, vy:sin(a)*sp, vz:rr(1,6),
@@ -2757,7 +3151,7 @@ function startMatch(){
   updateScoreboard();
   D.menu.style.display='none';
   D.hud.classList.add('on');
-  view.requestPointerLock();
+  if(!IS_TOUCH) view.requestPointerLock();
   announce('MATCH START');
 }
 function assignTags(){
@@ -2777,7 +3171,7 @@ function pause(){
 function resume(){
   G.mode='play';
   D.menu.style.display='none';
-  view.requestPointerLock();
+  if(!IS_TOUCH) view.requestPointerLock();
 }
 
 /* ============================================================================
@@ -2817,9 +3211,18 @@ function renderMenu(page){
     h+=rowRange('ADS Sensitivity','adsSens',0.2,1.5,0.05);
     h+='<div class="row"><span>Invert Look</span><div class="keyb" data-tog="invertY">'+(S.invertY?'ON':'OFF')+'</div></div>';
     h+='<div class="row"><span>ADS Mode</span><div class="keyb" data-tog="adsHold">'+(S.adsHold?'HOLD':'TOGGLE')+'</div></div>';
+    if(IS_TOUCH){
+      h+='<div class="sect">TOUCH</div>';
+      h+=rowRange('Look Sensitivity','touchSens',0.3,2.5,0.05);
+      h+='<div class="row"><span>Left-handed Layout</span><div class="keyb" data-tog="leftHanded">'+
+         (S.leftHanded?'ON':'OFF')+'</div></div>';
+    }
     h+='<div class="sect">VIDEO &amp; AUDIO</div>';
     h+=rowRange('Field of View','fov',60,110,1);
     h+=rowRange('Resolution Scale','res',0.32,1.0,0.02);
+    h+=rowRange('Bloom','bloom',0,1.2,0.05);
+    h+='<div class="row"><span>Film Grain</span><div class="keyb" data-tog="grain">'+(S.grain?'ON':'OFF')+'</div></div>';
+    h+='<div class="row"><span>Sun Flare</span><div class="keyb" data-tog="flare">'+(S.flare?'ON':'OFF')+'</div></div>';
     h+=rowRange('Screen Shake','shake',0,1.6,0.1);
     h+=rowRange('Volume','sfx',0,1,0.05);
     h+='<div style="margin-top:18px;display:flex;gap:10px">'+
@@ -2872,7 +3275,9 @@ D.panel.addEventListener('click',function(e){
   var b=t.getAttribute('data-bind');
   if(b){ capturing=b; renderMenu(); return; }
   var tg=t.getAttribute('data-tog');
-  if(tg){ S[tg]=S[tg]?0:1; saveSettings(); renderMenu(); }
+  if(tg){ S[tg]=S[tg]?0:1; saveSettings();
+    if(tg==='leftHanded') D.touch.classList.toggle('lefty',!!S.leftHanded);
+    renderMenu(); }
 });
 D.panel.addEventListener('input',function(e){
   var k=e.target.getAttribute&&e.target.getAttribute('data-set');
@@ -2899,6 +3304,12 @@ function step(dt){
     updateStreaks(dt);
   }
   updateFX(dt);
+  updateLights(dt);
+  // ambient dust drifting in the sunlight
+  if(G.mode==='play' && rnd()<dt*9)
+    fxSpawn({x:P.x+rr(-7,7), y:P.y+rr(-7,7), z:rr(0.15,2.4),
+      vx:rr(-.09,.09), vy:rr(-.09,.09), vz:rr(-.02,.05),
+      life:rr(2,4.5), spr:SPR.spark, size:rr(.008,.02), add:1, a0:0.45});
   VOICES=max(0,VOICES-dt*26);       // release the audio voice budget
   // shake decay
   SHAKE.m=approach(SHAKE.m,0,dt*2.4);
@@ -2925,7 +3336,130 @@ function frame(ts){
 }
 
 /* ============================================================================
-   27. BOOT
+   27. TOUCH CONTROLS  (phones / tablets)
+   ============================================================================
+   Left half  = movement stick with a floating origin.
+   Right half = drag to look (full 3D, pitch included).
+   Buttons sit above both zones and swallow their own touches.            */
+var TOUCH={ on:0, mx:0, my:0, sprint:0, jump:0, crouch:0, interact:0,
+            stickId:null, ox:0, oy:0, lookId:null, lx:0, ly:0 };
+var STICK_R=64;
+
+function touchInit(){
+  if(!IS_TOUCH) return;
+  D.touch.classList.add('on');
+  document.body.classList.add('touch');
+  if(S.leftHanded) D.touch.classList.add('lefty');
+
+  var stickBase=$('stickBase'), stickKnob=$('stickKnob');
+
+  function zoneOfTouch(t){
+    var half=window.innerWidth*0.5;
+    var leftSide = t.clientX < half;
+    return (S.leftHanded ? !leftSide : leftSide) ? 'move' : 'look';
+  }
+  function onStart(e){
+    if(G.mode!=='play') return;
+    for(var i=0;i<e.changedTouches.length;i++){
+      var t=e.changedTouches[i];
+      if(zoneOfTouch(t)==='move'){
+        if(TOUCH.stickId!==null) continue;
+        TOUCH.stickId=t.identifier; TOUCH.ox=t.clientX; TOUCH.oy=t.clientY; TOUCH.on=1;
+        stickBase.style.left=t.clientX+'px'; stickBase.style.top=t.clientY+'px';
+        stickBase.style.opacity=1; stickKnob.style.transform='translate(-50%,-50%)';
+      } else {
+        if(TOUCH.lookId!==null) continue;
+        TOUCH.lookId=t.identifier; TOUCH.lx=t.clientX; TOUCH.ly=t.clientY;
+      }
+    }
+    e.preventDefault();
+  }
+  function onMove(e){
+    for(var i=0;i<e.changedTouches.length;i++){
+      var t=e.changedTouches[i];
+      if(t.identifier===TOUCH.stickId){
+        var dx=t.clientX-TOUCH.ox, dy=t.clientY-TOUCH.oy;
+        var len=sqrt(dx*dx+dy*dy);
+        if(len>STICK_R){ dx*=STICK_R/len; dy*=STICK_R/len; len=STICK_R; }
+        TOUCH.mx=dx/STICK_R; TOUCH.my=-dy/STICK_R;
+        TOUCH.sprint = (len/STICK_R>0.86 && TOUCH.my>0.5) ? 1 : 0;
+        stickKnob.style.transform='translate(calc(-50% + '+dx+'px),calc(-50% + '+dy+'px))';
+      } else if(t.identifier===TOUCH.lookId){
+        var mult=S.touchSens*0.0034*lerp(1,S.adsSens,easeAds(P.ads));
+        P.ang += (t.clientX-TOUCH.lx)*mult;
+        P.pitch += (S.invertY?1:-1)*(t.clientY-TOUCH.ly)*mult*0.9;
+        P.pitch = clamp(P.pitch,-PITCH_LIMIT,PITCH_LIMIT);
+        if(P.ang>PI) P.ang-=TAU; if(P.ang<-PI) P.ang+=TAU;
+        TOUCH.lx=t.clientX; TOUCH.ly=t.clientY;
+      }
+    }
+    e.preventDefault();
+  }
+  function onEnd(e){
+    for(var i=0;i<e.changedTouches.length;i++){
+      var t=e.changedTouches[i];
+      if(t.identifier===TOUCH.stickId){
+        TOUCH.stickId=null; TOUCH.mx=TOUCH.my=0; TOUCH.on=0; TOUCH.sprint=0;
+        stickBase.style.opacity=0;
+      } else if(t.identifier===TOUCH.lookId){ TOUCH.lookId=null; }
+    }
+  }
+  var zone=D.touch;
+  zone.addEventListener('touchstart',onStart,{passive:false});
+  zone.addEventListener('touchmove',onMove,{passive:false});
+  zone.addEventListener('touchend',onEnd,{passive:false});
+  zone.addEventListener('touchcancel',onEnd,{passive:false});
+
+  /* ---- action buttons ---- */
+  function btn(id,onDown,onUp){
+    var b=$(id); if(!b) return;
+    b.addEventListener('touchstart',function(e){
+      e.preventDefault(); e.stopPropagation();
+      b.classList.add('down'); if(G.mode==='play') onDown();
+    },{passive:false});
+    var up=function(e){ e.preventDefault(); e.stopPropagation();
+      b.classList.remove('down'); if(onUp) onUp(); };
+    b.addEventListener('touchend',up,{passive:false});
+    b.addEventListener('touchcancel',up,{passive:false});
+  }
+  btn('bFire', function(){ MOUSE.l=true; }, function(){ MOUSE.l=false; });
+  btn('bAds',  function(){ toggleAds(); });
+  btn('bReload',function(){ startReload(); });
+  btn('bJump', function(){ TOUCH.jump=1; });
+  btn('bCrouch',function(){ TOUCH.crouch=TOUCH.crouch?0:1;
+    $('bCrouch').classList.toggle('active',!!TOUCH.crouch); });
+  btn('bSwap', function(){ swapWeapon((P.cur+1)%P.weapons.length); });
+  btn('bUse',  function(){ TOUCH.interact=1; }, function(){ TOUCH.interact=0; });
+  btn('bMelee',function(){ melee(); });
+  btn('bMenu', function(){ pause(); });
+
+  // tapping a ready killstreak card calls it in
+  D.streaks.addEventListener('touchstart',function(e){
+    var card=e.target.closest('.ks');
+    if(!card||!card.classList.contains('ready')) return;
+    e.preventDefault(); e.stopPropagation();
+    useStreak([].indexOf.call(D.streaks.children,card));
+  },{passive:false});
+
+  // keep the page from scrolling / zooming under the game
+  document.addEventListener('touchmove',function(e){
+    if(G.mode==='play') e.preventDefault();
+  },{passive:false});
+  document.addEventListener('gesturestart',function(e){ e.preventDefault(); });
+  window.addEventListener('orientationchange',function(){
+    setTimeout(function(){ resizeRender(); checkOrientation(); },260);
+  });
+  checkOrientation();
+}
+function checkOrientation(){
+  if(!MOBILE) return;
+  var portrait = window.innerHeight > window.innerWidth;
+  D.rotate.classList.toggle('on', portrait);
+}
+window.addEventListener('resize',checkOrientation);
+
+/* ============================================================================
+   28. BOOT
    ============================================================================ */
 function boot(){
   buildTextures();
@@ -2938,6 +3472,7 @@ function boot(){
   assignTags();
   buildStreakCards();
   updateScoreboard();
+  touchInit();
   renderMenu('main');
   D.loading.style.display='none';
   D.menu.style.display='flex';

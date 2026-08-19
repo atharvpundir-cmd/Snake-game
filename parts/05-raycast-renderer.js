@@ -3,11 +3,44 @@
    ============================================================================ */
 var RC=document.createElement('canvas'), RCTX=RC.getContext('2d',{alpha:false});
 var IMG=null, BUF=null, DEPTH=null, RW=0, RH=0, VW=0, VH=0;
-var CAM={x:0,y:0,ang:0,pitch:0,eye:0.56,tanHalf:0.75,proj:1,horizon:0,
+var CAM={x:0,y:0,ang:0,pitch:0,eye:0.56,tanHalf:0.75,proj:1,cy:0,cosP:1,sinP:0,
          dirX:1,dirY:0,planeX:0,planeY:1};
+var SKYV=null;                 // per-row sky texture row, rebuilt each frame
+var PITCH_LIMIT=1.45;          // ~83 deg up/down -- a real 3D look range
 var SHAKE={x:0,y:0,m:0,r:0};
-var FOG_R=226, FOG_G=238, FOG_B=244;
-var FOGC=(255<<24)|(244<<16)|(238<<8)|226;
+var FOG_R=214, FOG_G=229, FOG_B=241;
+var FOGC=(255<<24)|(241<<16)|(229<<8)|214;
+
+/* ---- dynamic point lights (muzzle flashes, explosions, streak fire) ---- */
+var LIGHTS=[], LIGHT_MAX=4;
+function addLight(x,y,z,r,g,b,power,life){
+  if(LIGHTS.length>=LIGHT_MAX) LIGHTS.shift();
+  LIGHTS.push({x:x,y:y,z:z,r:r,g:g,b:b,p:power,life:life,max:life});
+}
+function updateLights(dt){
+  for(var i=LIGHTS.length-1;i>=0;i--){
+    LIGHTS[i].life-=dt;
+    if(LIGHTS[i].life<=0) LIGHTS.splice(i,1);
+  }
+}
+
+/* ---- bloom + colour grade ---------------------------------------------- */
+var BLOOM=null, BLOOM2=null, BW=0, BH=0;
+var LUT_R=new Uint8Array(256), LUT_G=new Uint8Array(256), LUT_B=new Uint8Array(256);
+(function buildLUT(){
+  for(var i=0;i<256;i++){
+    var v=i/255;
+    // gentle filmic S-curve, then a warm-highlight / cool-shadow grade
+    var s=v*v*(3-2*v);
+    v=v*0.55+s*0.45;
+    var r=v*1.045+0.010*(1-v);
+    var g=v*1.000+0.004*(1-v);
+    var b=v*0.962+0.022*(1-v);
+    LUT_R[i]=clamp(r*255,0,255)|0;
+    LUT_G[i]=clamp(g*255,0,255)|0;
+    LUT_B[i]=clamp(b*255,0,255)|0;
+  }
+})();
 var SUNX=0.55, SUNY=-0.84;
 
 function shakeAdd(v){ SHAKE.m=min(1.4, SHAKE.m+v*S.shake); }
@@ -23,12 +56,17 @@ function resizeRender(){
   IMG=RCTX.createImageData(RW,RH);
   BUF=new Uint32Array(IMG.data.buffer);
   DEPTH=new Float32Array(RW*RH);
+  SKYV=new Int32Array(RH);
+  BW=max(4,RW>>2); BH=max(4,RH>>2);
+  BLOOM=new Float32Array(BW*BH*3);
+  BLOOM2=new Float32Array(BW*BH*3);
   vctx.imageSmoothingEnabled=true;
   fctx.imageSmoothingEnabled=true;
 }
 window.addEventListener('resize',function(){ resizeRender(); });
 
 function initRenderExtras(){
+  buildGrain();
   SPR.hole=TEX(24,24,function(g,w,h){
     var gr=g.createRadialGradient(12,12,0,12,12,11);
     gr.addColorStop(0,'rgba(10,10,12,.95)'); gr.addColorStop(.45,'rgba(30,30,34,.8)');
@@ -52,18 +90,30 @@ function render3D(){
   var tanHalf=Math.tan(fov*0.5);
   var proj=(RW*0.5)/tanHalf;
   var eye = P.eye + P.z;
-  var pitchPix = Math.tan(clamp(P.pitch,-0.92,0.92))*proj;
-  var horizon = RH*0.5 + pitchPix + SHAKE.y*RH*0.04 + P.bob*RH*0.010;
+  /* --- true 3D camera -------------------------------------------------
+     Pitch is a real rotation of the view basis, not a vertical shear, so
+     verticals converge properly when you look up or down. A world point at
+     horizontal distance d and height z projects through:
+        f' =  d*cosP + (z-eye)*sinP        (depth along the pitched axis)
+        u' = -d*sinP + (z-eye)*cosP        (height along the pitched axis)
+        screenY = cy - (u'/f')*proj
+     and the inverse, used per pixel to recover z:
+        z = eye + d*(s*cosP + sinP) / (cosP - s*sinP),  s = (cy-y)/proj   */
+  var pitch = clamp(P.pitch,-PITCH_LIMIT,PITCH_LIMIT);
+  var cosP=cos(pitch), sinP=sin(pitch);
+  var cy = RH*0.5 + SHAKE.y*RH*0.04 + P.bob*RH*0.010;
+  var horizon = cy + (sinP/cosP)*proj;      // where eye level lands on screen
 
-  CAM.x=P.x; CAM.y=P.y; CAM.ang=P.ang+SHAKE.x*0.03; CAM.pitch=P.pitch;
-  CAM.eye=eye; CAM.tanHalf=tanHalf; CAM.proj=proj; CAM.horizon=horizon;
+  CAM.x=P.x; CAM.y=P.y; CAM.ang=P.ang+SHAKE.x*0.03; CAM.pitch=pitch;
+  CAM.eye=eye; CAM.tanHalf=tanHalf; CAM.proj=proj; CAM.cy=cy;
+  CAM.cosP=cosP; CAM.sinP=sinP;
   CAM.dirX=cos(CAM.ang); CAM.dirY=sin(CAM.ang);
   CAM.planeX=-CAM.dirY*tanHalf; CAM.planeY=CAM.dirX*tanHalf;
 
   var dirX=CAM.dirX, dirY=CAM.dirY, planeX=CAM.planeX, planeY=CAM.planeY;
   var px=P.x, py=P.y;
   var buf=BUF, dep=DEPTH;
-  var hor=horizon|0;
+  var invProj=1/proj;
 
   // Prefill: guarantees every pixel is defined even if a pass skips a row
   // (fractional horizon, extreme pitch, rays leaving the map). Two typed-array
@@ -71,31 +121,41 @@ function render3D(){
   buf.fill(FOGC); dep.fill(1e9);
 
   /* ---------------- SKY ---------------------------------------------- */
-  var skyPx=SKY.px, skyScale=SKYH/(RH*0.92);
-  // ceil() so the row straddling the horizon is always painted: the floor pass
-  // skips rows whose p < 0.6, which would otherwise leave a bare scanline
-  var yTop=0, yBot=min(RH-1, Math.ceil(horizon));
+  /* Rows above the horizon look up into the sky dome. The vertical angle
+     depends only on the row, so the texture row is precomputed per scanline
+     and the elevation maps 0..90 deg onto the strip -- look straight up and
+     you get the zenith instead of running off the top of the texture. */
+  var skyPx=SKY.px;
+  var yBot=min(RH-1, Math.ceil(horizon));
+  for(var ys=0; ys<=yBot; ys++){
+    var s0=(cy-ys)*invProj;
+    var dv=sinP+s0*cosP, dh=cosP-s0*sinP;
+    var elev=atan2(dv, dh>1e-6?dh:1e-6);          // 0 at horizon, PI/2 at zenith
+    var vv=(1-clamp(elev/(PI*0.5),0,1))*(SKYH-1);
+    SKYV[ys]=vv|0;
+  }
   for(var x=0;x<RW;x++){
     var camX=2*x/RW-1;
     var rdx=dirX+planeX*camX, rdy=dirY+planeY*camX;
     var a=atan2(rdy,rdx)/TAU; a-=floor(a);
     var su=(a*SKYW)|0; if(su<0)su=0; if(su>=SKYW)su=SKYW-1;
-    for(var y=yTop;y<=yBot;y++){
-      var v=SKYH-1-(horizon-y)*skyScale;
-      if(v<0)v=0; else if(v>SKYH-1)v=SKYH-1;
+    for(var y=0;y<=yBot;y++){
       var i=y*RW+x;
-      buf[i]=skyPx[(v|0)*SKYW+su];
+      buf[i]=skyPx[SKYV[y]*SKYW+su];
       dep[i]=1e9;
     }
   }
-  if(hor<0){ /* looking far down: sky not visible */ }
 
   /* ---------------- FLOOR --------------------------------------------- */
   var rx0=dirX-planeX, ry0=dirY-planeY, rx1=dirX+planeX, ry1=dirY+planeY;
-  var fogStart=9, fogSpan=1/34;
-  for(var y2=max(0,hor+1); y2<RH; y2++){
-    var p=y2-horizon; if(p<0.6) continue;
-    var rowD=eye*proj/p;
+  var fogStart=16, fogSpan=1/58;      // lighter haze: distance stays readable
+  for(var y2=max(0,yBot); y2<RH; y2++){
+    // ray elevation for this scanline; only rows aimed below eye level hit ground
+    var sf=(cy-y2)*invProj;
+    var dvf=sinP+sf*cosP, dhf=cosP-sf*sinP;
+    if(dvf>=-1e-4||dhf<=1e-6) continue;
+    var rowD=eye*dhf/(-dvf);
+    if(rowD<0.02) continue;
     if(rowD>62){ // beyond the fog wall -> flat haze
       var iRow=y2*RW;
       for(var xf=0;xf<RW;xf++){ buf[iRow+xf]=FOGC; dep[iRow+xf]=rowD; }
@@ -105,21 +165,30 @@ function render3D(){
     var fX=px+rowD*rx0, fY=py+rowD*ry0;
     var fog=clamp((rowD-fogStart)*fogSpan,0,1); fog*=fog*0.92;
     var fr=FOG_R*fog, fg=FOG_G*fog, fb=FOG_B*fog, base=(1-fog);
-    var row=y2*RW;
+    var row=y2*RW, nL=LIGHTS.length;
     for(var x2=0;x2<RW;x2++){
       // floor() not |0: for coords in (-1,0) truncation would pass the bounds
-      // check and then index the texture negatively
-      var cx=floor(fX), cy=floor(fY), o=row+x2;
-      if(cx>=0&&cy>=0&&cx<MW&&cy<MH){
-        var ti=idx(cx,cy);
+      // check and then index the texture negatively.
+      // NB: tile coords must NOT be named cy -- `var` is function scoped and
+      // would clobber the camera centre used by every later scanline.
+      var tcx=floor(fX), tcy=floor(fY), o=row+x2;
+      if(tcx>=0&&tcy>=0&&tcx<MW&&tcy<MH){
+        var ti=idx(tcx,tcy);
         var t=FLOORTEX[FLR[ti]]||FLOORTEX[0];
-        var tx=((fX-cx)*TS)|0, ty=((fY-cy)*TS)|0;
+        var tx=((fX-tcx)*TS)|0, ty=((fY-tcy)*TS)|0;
         var c=t.px[ty*TS+tx];
         var sh=base*LIGHT[ti];
+        var lr=0,lg=0,lb=0;
+        for(var li=0;li<nL;li++){
+          var L=LIGHTS[li];
+          var ldx=L.x-fX, ldy=L.y-fY;
+          var att=L.p*(L.life/L.max)/(1+(ldx*ldx+ldy*ldy+L.z*L.z)*1.3);
+          if(att>0.004){ lr+=L.r*att; lg+=L.g*att; lb+=L.b*att; }
+        }
         buf[o]=(255<<24)|
-          ((((c>>16&255)*sh+fb)|0)<<16)|
-          ((((c>>8&255)*sh+fg)|0)<<8)|
-          (((c&255)*sh+fr)|0);
+          ((((c>>16&255)*(sh+lb)+fb)|0)<<16)|
+          ((((c>>8&255)*(sh+lg)+fg)|0)<<8)|
+          (((c&255)*(sh+lr)+fr)|0);
       } else {
         buf[o]=FOGC;               // ground outside the arena -> horizon haze
       }
@@ -160,9 +229,13 @@ function render3D(){
       var d=hitsD[k]; if(d<0.02) d=0.02;
       var code=hitsT[k], hgt=WALLH[code]||1;
       var tex=WALLTEX[code]||WALLTEX[1];
-      var yb=horizon+(eye)*proj/d;
-      var yt=horizon+(eye-hgt)*proj/d;
-      var y0=yt|0, y1=yb|0;
+      // project the wall's foot (z=0) and head (z=hgt) through the pitched camera
+      var fb=d*cosP+(0-eye)*sinP,    ub=-d*sinP+(0-eye)*cosP;
+      var ft=d*cosP+(hgt-eye)*sinP,  ut=-d*sinP+(hgt-eye)*cosP;
+      var yb = fb>1e-4 ? cy-(ub/fb)*proj : (ub>0?-1e7:1e7);
+      var yt = ft>1e-4 ? cy-(ut/ft)*proj : (ut>0?-1e7:1e7);
+      if(yt>yb){ var sw=yt; yt=yb; yb=sw; }
+      var y0=Math.ceil(yt), y1=floor(yb);
       if(y1<0||y0>=RH) continue;
       var rep=hgt>1.6?2:1;
       var texX=(hitsW[k]*TS)|0; if(texX<0)texX=0; if(texX>=TS)texX=TS-1;
@@ -171,25 +244,37 @@ function render3D(){
       var nx = sd===0?hitsN[k]:0, ny = sd===1?hitsN[k]:0;
       var sun = max(0, nx*SUNX+ny*SUNY);
       var sh = ((sd===0?1.0:0.86) + sun*0.22) * (0.72+0.28*LIGHT[hitsI[k]]);
+      // dynamic lights, evaluated once at the wall hit point for this column
+      var hx=px+rdx2*d, hy=py+rdy2*d, lr2=0, lg2=0, lb2=0;
+      for(var li2=0;li2<LIGHTS.length;li2++){
+        var L2=LIGHTS[li2];
+        var lx2=L2.x-hx, ly2=L2.y-hy;
+        var at2=L2.p*(L2.life/L2.max)/(1+(lx2*lx2+ly2*ly2)*1.3);
+        if(at2>0.004){ lr2+=L2.r*at2; lg2+=L2.g*at2; lb2+=L2.b*at2; }
+      }
       var fog2=clamp((d-fogStart)*fogSpan,0,1); fog2*=fog2*0.92;
       var a2=sh*(1-fog2);
+      var ar=(sh+lr2)*(1-fog2), ag=(sh+lg2)*(1-fog2), ab=(sh+lb2)*(1-fog2);
       var fr2=FOG_R*fog2, fg2=FOG_G*fog2, fb2=FOG_B*fog2;
       var yA=y0<0?0:y0, yB=y1>=RH?RH-1:y1;
-      var invH=1/(yb-yt);
       var col32=tex.px;
+      var vScale=rep/hgt;
+      var sp=(cy-yA)*invProj, spStep=-invProj;
       // hits are drawn far -> near, so nearer walls simply overwrite; testing
       // against the floor's depth here would punch floor-coloured specks
       // through wall bases where rowDistance ~= perpWallDist.
-      for(var y3=yA;y3<=yB;y3++){
+      for(var y3=yA;y3<=yB;y3++, sp+=spStep){
         var o2=y3*RW+col;
-        var f=(yb-y3)*invH;                 // 0 at top .. 1 at bottom
-        var vv=((1-f)*rep)%1;
+        // recover the world height this pixel sees, then wrap it into the texture
+        var den=cosP-sp*sinP;
+        var zw=eye+d*(sp*cosP+sinP)/(den!==0?den:1e-6);
+        var vv=zw*vScale; vv-=floor(vv);
         var ty2=(vv*TS)|0; if(ty2<0)ty2=0; else if(ty2>=TS)ty2=TS-1;
-        var c2=col32[ty2*TS+texX];
+        var c2=col32[(TS-1-ty2)*TS+texX];
         buf[o2]=(255<<24)|
-          ((((c2>>16&255)*a2+fb2)|0)<<16)|
-          ((((c2>>8&255)*a2+fg2)|0)<<8)|
-          (((c2&255)*a2+fr2)|0);
+          ((((c2>>16&255)*ab+fb2)|0)<<16)|
+          ((((c2>>8&255)*ag+fg2)|0)<<8)|
+          (((c2&255)*ar+fr2)|0);
         dep[o2]=d;
       }
     }
@@ -235,23 +320,98 @@ function render3D(){
   }
   list.sort(function(a,b){return b.d-a.d;});
   var invDet=1/(planeX*dirY-dirX*planeY);
-  for(var s2=0;s2<list.length;s2++) drawSprite(list[s2],invDet,px,py,proj,horizon,eye);
+  for(var s2=0;s2<list.length;s2++) drawSprite(list[s2],invDet,px,py,proj,cy,eye,cosP,sinP);
 
+  postProcess();
   RCTX.putImageData(IMG,0,0);
   vctx.drawImage(RC,0,0,RW,RH,0,0,VW,VH);
 }
 
-function drawSprite(s,invDet,px,py,proj,horizon,eye){
+/* ---------------------------------------------------------------------------
+   Post: bright-pass bloom at quarter res, then composite + filmic grade.
+   Two full-buffer passes; the blur itself runs on 1/16th the pixels.
+   --------------------------------------------------------------------------- */
+function postProcess(){
+  var buf=BUF, n=RW*RH;
+  var doBloom = S.bloom!==0;
+  if(doBloom){
+    var bl=BLOOM, b2=BLOOM2, i, j;
+    for(i=0;i<bl.length;i++) bl[i]=0;
+    // bright pass, quarter-res nearest sample
+    for(var by=0;by<BH;by++){
+      var syy=(by<<2)*RW, row=by*BW*3;
+      for(var bx=0;bx<BW;bx++){
+        var c=buf[syy+(bx<<2)];
+        var r=c&255, g=c>>8&255, b=c>>16&255;
+        var lum=r*0.299+g*0.587+b*0.114;
+        if(lum>188){
+          var e=(lum-188)/67; if(e>1.6)e=1.6;
+          var o=row+bx*3;
+          bl[o]=r*e; bl[o+1]=g*e; bl[o+2]=b*e;
+        }
+      }
+    }
+    // separable blur (radius 2) -> b2 -> bl
+    for(var y1=0;y1<BH;y1++){
+      var ro=y1*BW*3;
+      for(var x1=0;x1<BW;x1++){
+        var sr=0,sg=0,sb=0,cnt=0;
+        for(var k=-2;k<=2;k++){
+          var xx=x1+k; if(xx<0||xx>=BW) continue;
+          var oo=ro+xx*3; sr+=bl[oo]; sg+=bl[oo+1]; sb+=bl[oo+2]; cnt++;
+        }
+        var op=ro+x1*3; b2[op]=sr/cnt; b2[op+1]=sg/cnt; b2[op+2]=sb/cnt;
+      }
+    }
+    for(var y2=0;y2<BH;y2++){
+      for(var x2=0;x2<BW;x2++){
+        var sr2=0,sg2=0,sb2=0,c2=0;
+        for(var k2=-2;k2<=2;k2++){
+          var yy=y2+k2; if(yy<0||yy>=BH) continue;
+          var o2=(yy*BW+x2)*3; sr2+=b2[o2]; sg2+=b2[o2+1]; sb2+=b2[o2+2]; c2++;
+        }
+        var op2=(y2*BW+x2)*3; bl[op2]=sr2/c2; bl[op2+1]=sg2/c2; bl[op2+2]=sb2/c2;
+      }
+    }
+  }
+  // composite + saturation + grade
+  var amt=S.bloom===undefined?0.42:S.bloom;
+  for(var y=0;y<RH;y++){
+    var brow=((y>>2)*BW)*3, orow=y*RW;
+    for(var x=0;x<RW;x++){
+      var p=buf[orow+x];
+      var R=p&255, G=p>>8&255, B=p>>16&255;
+      if(doBloom){
+        var bo=brow+((x>>2)*3);
+        R+=BLOOM[bo]*amt; G+=BLOOM[bo+1]*amt; B+=BLOOM[bo+2]*amt;
+      }
+      // subtle saturation lift
+      var l=R*0.299+G*0.587+B*0.114;
+      R=l+(R-l)*1.13; G=l+(G-l)*1.13; B=l+(B-l)*1.13;
+      if(R<0)R=0; else if(R>255)R=255;
+      if(G<0)G=0; else if(G>255)G=255;
+      if(B<0)B=0; else if(B>255)B=255;
+      buf[orow+x]=(255<<24)|(LUT_B[B|0]<<16)|(LUT_G[G|0]<<8)|LUT_R[R|0];
+    }
+  }
+}
+
+function drawSprite(s,invDet,px,py,proj,cy,eye,cosP,sinP){
   var sx=s.x-px, sy=s.y-py;
   var dirX=CAM.dirX, dirY=CAM.dirY, planeX=CAM.planeX, planeY=CAM.planeY;
   var tX=invDet*(dirY*sx-dirX*sy);
   var tY=invDet*(-planeY*sx+planeX*sy);
   if(tY<0.12) return;
   var scrX=(RW*0.5)*(1+tX/tY);
-  var hPix=s.h*proj/tY, wPix=s.w*proj/tY;
+  var wPix=s.w*proj/tY;
+  // project the billboard's foot and head through the same pitched camera
+  var zb=s.z, zt=s.z+s.h;
+  var fb=tY*cosP+(zb-eye)*sinP, ub=-tY*sinP+(zb-eye)*cosP;
+  var ft=tY*cosP+(zt-eye)*sinP, ut=-tY*sinP+(zt-eye)*cosP;
+  if(fb<0.05||ft<0.05) return;
+  var yBot=cy-(ub/fb)*proj, yTop=cy-(ut/ft)*proj;
+  var hPix=yBot-yTop;
   if(wPix<0.7||hPix<0.7) return;
-  var yBot=horizon+(eye-s.z)*proj/tY;
-  var yTop=yBot-hPix;
   var x0=(scrX-wPix*0.5)|0, x1=(scrX+wPix*0.5)|0;
   var y0=yTop|0, y1=yBot|0;
   if(x1<0||x0>=RW||y1<0||y0>=RH) return;
@@ -292,9 +452,89 @@ var VM={ sx:0, sy:0, swayX:0, swayY:0, bobX:0, bobY:0, kick:0, kickA:0,
          boltT:0, reloadT:0, flash:0, flashA:0, swapT:0 };
 var HITMARK={t:0, hs:0, kill:0};
 
+var SUN_AZ=(300/1024)*TAU, SUN_EL=1.22;   // matches the sun painted into the sky
+var GRAINTILE=null;
+function buildGrain(){
+  GRAINTILE=document.createElement('canvas');
+  GRAINTILE.width=GRAINTILE.height=128;
+  var g=GRAINTILE.getContext('2d');
+  var im=g.createImageData(128,128), d=im.data;
+  for(var i=0;i<d.length;i+=4){
+    var v=190+rnd()*65|0;
+    d[i]=d[i+1]=d[i+2]=v; d[i+3]=255;
+  }
+  g.putImageData(im,0,0);
+}
+/* project a world direction (azimuth/elevation) to screen, or null if behind */
+function projectDir(az,el){
+  var rel=az-CAM.ang;
+  var ce=cos(el);
+  var fwd=cos(rel)*ce, rgt=sin(rel)*ce, up=sin(el);
+  var f= fwd*CAM.cosP + up*CAM.sinP;
+  if(f<0.06) return null;
+  var u=-fwd*CAM.sinP + up*CAM.cosP;
+  var ps=(VW*0.5)/CAM.tanHalf;
+  return { x: VW*0.5 + (rgt/f)*ps,
+           y: CAM.cy*(VH/RH) - (u/f)*ps, f:f };
+}
+function drawSunFlare(){
+  if(!S.flare) return;
+  var p=projectDir(SUN_AZ,SUN_EL);
+  if(!p) return;
+  if(p.x<-VW*0.4||p.x>VW*1.4||p.y<-VH*0.4||p.y>VH*1.4) return;
+  var g=fctx;
+  var cxs=VW*0.5, cys=VH*0.5;
+  var off=sqrt((p.x-cxs)*(p.x-cxs)+(p.y-cys)*(p.y-cys));
+  var fade=clamp(1-off/(VW*0.75),0,1);
+  if(fade<=0.01) return;
+  g.save();
+  g.globalCompositeOperation='lighter';
+  var r0=VH*0.30*fade;
+  var gr=g.createRadialGradient(p.x,p.y,0,p.x,p.y,r0);
+  gr.addColorStop(0,'rgba(255,250,225,'+(0.42*fade)+')');
+  gr.addColorStop(.25,'rgba(255,225,160,'+(0.16*fade)+')');
+  gr.addColorStop(1,'rgba(255,200,120,0)');
+  g.fillStyle=gr; g.beginPath(); g.arc(p.x,p.y,r0,0,TAU); g.fill();
+  // ghosts strung back through the screen centre
+  var ghosts=[[0.32,26,'rgba(140,200,255,'],[0.62,15,'rgba(255,190,120,'],
+              [0.90,22,'rgba(180,255,200,'],[1.26,11,'rgba(255,150,150,']];
+  for(var i=0;i<ghosts.length;i++){
+    var t=ghosts[i][0];
+    var gx=p.x+(cxs-p.x)*t*2, gy=p.y+(cys-p.y)*t*2;
+    g.fillStyle=ghosts[i][2]+(0.075*fade)+')';
+    g.beginPath(); g.arc(gx,gy,ghosts[i][1]*fade+4,0,TAU); g.fill();
+  }
+  g.restore();
+}
+function drawGrain(){
+  if(!S.grain||!GRAINTILE) return;
+  var g=fctx;
+  g.save();
+  g.globalCompositeOperation='overlay';
+  g.globalAlpha=0.045;
+  var ox=-(rnd()*128)|0, oy=-(rnd()*128)|0;
+  var pat=g.createPattern(GRAINTILE,'repeat');
+  g.fillStyle=pat;
+  g.translate(ox,oy);
+  g.fillRect(0,0,VW+128,VH+128);
+  g.restore();
+}
+function drawVignette(){
+  var g=fctx;
+  var gr=g.createRadialGradient(VW*0.5,VH*0.5,VH*0.32,VW*0.5,VH*0.5,VH*0.92);
+  gr.addColorStop(0,'rgba(0,0,0,0)');
+  gr.addColorStop(1,'rgba(0,0,0,.42)');
+  g.fillStyle=gr; g.fillRect(0,0,VW,VH);
+}
+
 function drawOverlay(dt){
   fctx.clearRect(0,0,VW,VH);
   var w=W(), ads=easeAds(P.ads);
+
+  /* --- atmospherics behind the weapon --- */
+  drawSunFlare();
+  drawVignette();
+  drawGrain();
 
   /* --- weapon --- */
   if(!(w.def.scope && P.ads>0.86) && P.alive) drawViewmodel(w,ads);

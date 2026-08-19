@@ -18,11 +18,11 @@ document.addEventListener('keydown',function(e){
   if(G.mode!=='play') return;
   if(e.code===S.binds.reload) startReload();
   if(e.code===S.binds.swap) swapWeapon((P.cur+1)%P.weapons.length);
-  if(e.code==='Digit1') swapWeapon(0);
-  if(e.code==='Digit2') swapWeapon(1);
-  if(e.code==='Digit3') useStreak(0);
-  if(e.code==='Digit4') useStreak(1);
-  if(e.code==='Digit5') useStreak(2);
+  if(e.code===S.binds.wpn1) swapWeapon(0);
+  if(e.code===S.binds.wpn2) swapWeapon(1);
+  if(e.code===S.binds.ks1) useStreak(0);
+  if(e.code===S.binds.ks2) useStreak(1);
+  if(e.code===S.binds.ks3) useStreak(2);
   if(e.code===S.binds.melee) melee();
   if(e.code===S.binds.score) D.board.classList.remove('hidden');
 },false);
@@ -50,14 +50,14 @@ document.addEventListener('wheel',function(e){
 
 document.addEventListener('pointerlockchange',function(){
   LOCKED = (document.pointerLockElement===view);
-  if(!LOCKED && G.mode==='play') pause();
+  if(!LOCKED && G.mode==='play' && !MOBILE) pause();
 });
 document.addEventListener('mousemove',function(e){
   if(!LOCKED||G.mode!=='play') return;
   var mult = S.sens*0.0022*lerp(1,S.adsSens,easeAds(P.ads));
   P.ang += e.movementX*mult;
   P.pitch += (S.invertY?1:-1)*e.movementY*mult*0.85;
-  P.pitch = clamp(P.pitch,-0.92,0.92);
+  P.pitch = clamp(P.pitch,-PITCH_LIMIT,PITCH_LIMIT);
   if(P.ang>PI) P.ang-=TAU; if(P.ang<-PI) P.ang+=TAU;
   VM.swayX = clamp(VM.swayX - e.movementX*0.32, -46, 46);
   VM.swayY = clamp(VM.swayY - e.movementY*0.24, -34, 34);
@@ -125,6 +125,10 @@ function fire(){
   P.recoilH += rr(-d.recoilH,d.recoilH);
   shakeAdd(d.cls==='SNIPER'?0.30:0.07);
   fxSpawn({x:P.x+dx*0.5,y:P.y+dy*0.5,z:eyeZ,life:0.05,spr:SPR.flash,size:0.22,add:1});
+  addLight(P.x+dx*0.6, P.y+dy*0.6, eyeZ, 1.0,0.85,0.5,
+           d.cls==='SNIPER'?3.0:1.9, d.cls==='SNIPER'?0.09:0.06);
+  tracer(P.x+dx*0.7, P.y+dy*0.7, eyeZ-0.05, dx,dy,dz,
+         min(r.wallD, d.range+22), true);
   // --- resolve hits -------------------------------------------------------
   var killedThisShot=0, hitAny=false, hs=false;
   for(var i=0;i<r.hits.length;i++){
@@ -182,9 +186,11 @@ function updatePlayer(dt){
   var fx2=0, fy2=0;
   var mf=(down('fwd')?1:0)-(down('back')?1:0);
   var ms=(down('right')?1:0)-(down('left')?1:0);
-  var wantSprint = down('sprint') && mf>0 && P.ads<0.2 && w.st!=='reload';
+  if(TOUCH.on){ mf+=TOUCH.my; ms+=TOUCH.mx; }
+  mf=clamp(mf,-1,1); ms=clamp(ms,-1,1);
+  var wantSprint = (down('sprint')||TOUCH.sprint) && mf>0.4 && P.ads<0.2 && w.st!=='reload';
   P.sprint=approach(P.sprint, wantSprint?1:0, dt*(wantSprint?4:8));
-  P.crouching = down('crouch');
+  P.crouching = down('crouch')||!!TOUCH.crouch;
   P.crouchT=approach(P.crouchT, P.crouching?1:0, dt*7);
   P.eye = lerp(0.58, 0.34, P.crouchT);
   var base = 3.55*d.moveMul;
@@ -203,7 +209,8 @@ function updatePlayer(dt){
   moveEnt(P,P.vx*dt,P.vy*dt,P.radius);
   var moved=sqrt((P.x-oldx)*(P.x-oldx)+(P.y-oldy)*(P.y-oldy));
   /* ---- jump / vertical ---- */
-  if(down('jump')&&P.z<=0.001&&P.vz===0){ P.vz=3.05; SND.step(0.5,0); }
+  if((down('jump')||TOUCH.jump)&&P.z<=0.001&&P.vz===0){ P.vz=3.05; SND.step(0.5,0); }
+  TOUCH.jump=0;
   if(P.vz!==0||P.z>0){
     P.vz-=11.5*dt; P.z+=P.vz*dt;
     if(P.z<=0){ P.z=0; if(P.vz<-1.2) SND.step(0.8,0); P.vz=0; }
@@ -224,7 +231,7 @@ function updatePlayer(dt){
   P.ang   += P.recoilH*dt*10;
   P.recoilV=approach(P.recoilV,0,dt*(P.recoilV>0?2.2:6.0));
   P.recoilH=approach(P.recoilH,0,dt*2.0);
-  P.pitch = clamp(P.pitch,-0.92,0.92);
+  P.pitch = clamp(P.pitch,-PITCH_LIMIT,PITCH_LIMIT);
   /* ---- weapon state machine ---- */
   if(w.t>0) w.t-=dt;
   if(w.st==='bolt'){
@@ -303,7 +310,7 @@ function updatePickupPrompt(dt){
     D.pick.classList.add('on');
     D.pickKey.textContent=keyLabel(S.binds.interact);
     D.pickTxt.textContent='for '+def.name+(def.attach?' '+def.attach:'');
-    if(down('interact')){
+    if(down('interact')||TOUCH.interact){
       pickHold+=dt;
       D.pickFill.style.width=clamp(pickHold/0.7,0,1)*100+'%';
       if(pickHold>=0.7){
@@ -478,6 +485,7 @@ function updateStreaks(dt){
 function explode(x,y,z,radius,dmg,owner){
   SND.explode(panOf(x,y), volOf(x,y));
   shakeAdd(clamp(1.6/(1+dist2P(x,y)*0.4),0,0.55));
+  addLight(x,y,z+0.4, 1.0,0.55,0.18, 9, 0.5);
   for(var i=0;i<26;i++){
     var a=rnd()*TAU, sp=rr(1,7);
     fxSpawn({x:x,y:y,z:z+0.1, vx:cos(a)*sp, vy:sin(a)*sp, vz:rr(1,6),
@@ -676,7 +684,7 @@ function startMatch(){
   updateScoreboard();
   D.menu.style.display='none';
   D.hud.classList.add('on');
-  view.requestPointerLock();
+  if(!IS_TOUCH) view.requestPointerLock();
   announce('MATCH START');
 }
 function assignTags(){
@@ -696,7 +704,7 @@ function pause(){
 function resume(){
   G.mode='play';
   D.menu.style.display='none';
-  view.requestPointerLock();
+  if(!IS_TOUCH) view.requestPointerLock();
 }
 
 /* ============================================================================
@@ -736,9 +744,18 @@ function renderMenu(page){
     h+=rowRange('ADS Sensitivity','adsSens',0.2,1.5,0.05);
     h+='<div class="row"><span>Invert Look</span><div class="keyb" data-tog="invertY">'+(S.invertY?'ON':'OFF')+'</div></div>';
     h+='<div class="row"><span>ADS Mode</span><div class="keyb" data-tog="adsHold">'+(S.adsHold?'HOLD':'TOGGLE')+'</div></div>';
+    if(IS_TOUCH){
+      h+='<div class="sect">TOUCH</div>';
+      h+=rowRange('Look Sensitivity','touchSens',0.3,2.5,0.05);
+      h+='<div class="row"><span>Left-handed Layout</span><div class="keyb" data-tog="leftHanded">'+
+         (S.leftHanded?'ON':'OFF')+'</div></div>';
+    }
     h+='<div class="sect">VIDEO &amp; AUDIO</div>';
     h+=rowRange('Field of View','fov',60,110,1);
     h+=rowRange('Resolution Scale','res',0.32,1.0,0.02);
+    h+=rowRange('Bloom','bloom',0,1.2,0.05);
+    h+='<div class="row"><span>Film Grain</span><div class="keyb" data-tog="grain">'+(S.grain?'ON':'OFF')+'</div></div>';
+    h+='<div class="row"><span>Sun Flare</span><div class="keyb" data-tog="flare">'+(S.flare?'ON':'OFF')+'</div></div>';
     h+=rowRange('Screen Shake','shake',0,1.6,0.1);
     h+=rowRange('Volume','sfx',0,1,0.05);
     h+='<div style="margin-top:18px;display:flex;gap:10px">'+
@@ -791,7 +808,9 @@ D.panel.addEventListener('click',function(e){
   var b=t.getAttribute('data-bind');
   if(b){ capturing=b; renderMenu(); return; }
   var tg=t.getAttribute('data-tog');
-  if(tg){ S[tg]=S[tg]?0:1; saveSettings(); renderMenu(); }
+  if(tg){ S[tg]=S[tg]?0:1; saveSettings();
+    if(tg==='leftHanded') D.touch.classList.toggle('lefty',!!S.leftHanded);
+    renderMenu(); }
 });
 D.panel.addEventListener('input',function(e){
   var k=e.target.getAttribute&&e.target.getAttribute('data-set');
@@ -818,6 +837,12 @@ function step(dt){
     updateStreaks(dt);
   }
   updateFX(dt);
+  updateLights(dt);
+  // ambient dust drifting in the sunlight
+  if(G.mode==='play' && rnd()<dt*9)
+    fxSpawn({x:P.x+rr(-7,7), y:P.y+rr(-7,7), z:rr(0.15,2.4),
+      vx:rr(-.09,.09), vy:rr(-.09,.09), vz:rr(-.02,.05),
+      life:rr(2,4.5), spr:SPR.spark, size:rr(.008,.02), add:1, a0:0.45});
   VOICES=max(0,VOICES-dt*26);       // release the audio voice budget
   // shake decay
   SHAKE.m=approach(SHAKE.m,0,dt*2.4);
@@ -844,7 +869,130 @@ function frame(ts){
 }
 
 /* ============================================================================
-   27. BOOT
+   27. TOUCH CONTROLS  (phones / tablets)
+   ============================================================================
+   Left half  = movement stick with a floating origin.
+   Right half = drag to look (full 3D, pitch included).
+   Buttons sit above both zones and swallow their own touches.            */
+var TOUCH={ on:0, mx:0, my:0, sprint:0, jump:0, crouch:0, interact:0,
+            stickId:null, ox:0, oy:0, lookId:null, lx:0, ly:0 };
+var STICK_R=64;
+
+function touchInit(){
+  if(!IS_TOUCH) return;
+  D.touch.classList.add('on');
+  document.body.classList.add('touch');
+  if(S.leftHanded) D.touch.classList.add('lefty');
+
+  var stickBase=$('stickBase'), stickKnob=$('stickKnob');
+
+  function zoneOfTouch(t){
+    var half=window.innerWidth*0.5;
+    var leftSide = t.clientX < half;
+    return (S.leftHanded ? !leftSide : leftSide) ? 'move' : 'look';
+  }
+  function onStart(e){
+    if(G.mode!=='play') return;
+    for(var i=0;i<e.changedTouches.length;i++){
+      var t=e.changedTouches[i];
+      if(zoneOfTouch(t)==='move'){
+        if(TOUCH.stickId!==null) continue;
+        TOUCH.stickId=t.identifier; TOUCH.ox=t.clientX; TOUCH.oy=t.clientY; TOUCH.on=1;
+        stickBase.style.left=t.clientX+'px'; stickBase.style.top=t.clientY+'px';
+        stickBase.style.opacity=1; stickKnob.style.transform='translate(-50%,-50%)';
+      } else {
+        if(TOUCH.lookId!==null) continue;
+        TOUCH.lookId=t.identifier; TOUCH.lx=t.clientX; TOUCH.ly=t.clientY;
+      }
+    }
+    e.preventDefault();
+  }
+  function onMove(e){
+    for(var i=0;i<e.changedTouches.length;i++){
+      var t=e.changedTouches[i];
+      if(t.identifier===TOUCH.stickId){
+        var dx=t.clientX-TOUCH.ox, dy=t.clientY-TOUCH.oy;
+        var len=sqrt(dx*dx+dy*dy);
+        if(len>STICK_R){ dx*=STICK_R/len; dy*=STICK_R/len; len=STICK_R; }
+        TOUCH.mx=dx/STICK_R; TOUCH.my=-dy/STICK_R;
+        TOUCH.sprint = (len/STICK_R>0.86 && TOUCH.my>0.5) ? 1 : 0;
+        stickKnob.style.transform='translate(calc(-50% + '+dx+'px),calc(-50% + '+dy+'px))';
+      } else if(t.identifier===TOUCH.lookId){
+        var mult=S.touchSens*0.0034*lerp(1,S.adsSens,easeAds(P.ads));
+        P.ang += (t.clientX-TOUCH.lx)*mult;
+        P.pitch += (S.invertY?1:-1)*(t.clientY-TOUCH.ly)*mult*0.9;
+        P.pitch = clamp(P.pitch,-PITCH_LIMIT,PITCH_LIMIT);
+        if(P.ang>PI) P.ang-=TAU; if(P.ang<-PI) P.ang+=TAU;
+        TOUCH.lx=t.clientX; TOUCH.ly=t.clientY;
+      }
+    }
+    e.preventDefault();
+  }
+  function onEnd(e){
+    for(var i=0;i<e.changedTouches.length;i++){
+      var t=e.changedTouches[i];
+      if(t.identifier===TOUCH.stickId){
+        TOUCH.stickId=null; TOUCH.mx=TOUCH.my=0; TOUCH.on=0; TOUCH.sprint=0;
+        stickBase.style.opacity=0;
+      } else if(t.identifier===TOUCH.lookId){ TOUCH.lookId=null; }
+    }
+  }
+  var zone=D.touch;
+  zone.addEventListener('touchstart',onStart,{passive:false});
+  zone.addEventListener('touchmove',onMove,{passive:false});
+  zone.addEventListener('touchend',onEnd,{passive:false});
+  zone.addEventListener('touchcancel',onEnd,{passive:false});
+
+  /* ---- action buttons ---- */
+  function btn(id,onDown,onUp){
+    var b=$(id); if(!b) return;
+    b.addEventListener('touchstart',function(e){
+      e.preventDefault(); e.stopPropagation();
+      b.classList.add('down'); if(G.mode==='play') onDown();
+    },{passive:false});
+    var up=function(e){ e.preventDefault(); e.stopPropagation();
+      b.classList.remove('down'); if(onUp) onUp(); };
+    b.addEventListener('touchend',up,{passive:false});
+    b.addEventListener('touchcancel',up,{passive:false});
+  }
+  btn('bFire', function(){ MOUSE.l=true; }, function(){ MOUSE.l=false; });
+  btn('bAds',  function(){ toggleAds(); });
+  btn('bReload',function(){ startReload(); });
+  btn('bJump', function(){ TOUCH.jump=1; });
+  btn('bCrouch',function(){ TOUCH.crouch=TOUCH.crouch?0:1;
+    $('bCrouch').classList.toggle('active',!!TOUCH.crouch); });
+  btn('bSwap', function(){ swapWeapon((P.cur+1)%P.weapons.length); });
+  btn('bUse',  function(){ TOUCH.interact=1; }, function(){ TOUCH.interact=0; });
+  btn('bMelee',function(){ melee(); });
+  btn('bMenu', function(){ pause(); });
+
+  // tapping a ready killstreak card calls it in
+  D.streaks.addEventListener('touchstart',function(e){
+    var card=e.target.closest('.ks');
+    if(!card||!card.classList.contains('ready')) return;
+    e.preventDefault(); e.stopPropagation();
+    useStreak([].indexOf.call(D.streaks.children,card));
+  },{passive:false});
+
+  // keep the page from scrolling / zooming under the game
+  document.addEventListener('touchmove',function(e){
+    if(G.mode==='play') e.preventDefault();
+  },{passive:false});
+  document.addEventListener('gesturestart',function(e){ e.preventDefault(); });
+  window.addEventListener('orientationchange',function(){
+    setTimeout(function(){ resizeRender(); checkOrientation(); },260);
+  });
+  checkOrientation();
+}
+function checkOrientation(){
+  if(!MOBILE) return;
+  var portrait = window.innerHeight > window.innerWidth;
+  D.rotate.classList.toggle('on', portrait);
+}
+window.addEventListener('resize',checkOrientation);
+
+/* ============================================================================
+   28. BOOT
    ============================================================================ */
 function boot(){
   buildTextures();
@@ -857,6 +1005,7 @@ function boot(){
   assignTags();
   buildStreakCards();
   updateScoreboard();
+  touchInit();
   renderMenu('main');
   D.loading.style.display='none';
   D.menu.style.display='flex';
