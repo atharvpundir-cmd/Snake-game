@@ -106,21 +106,9 @@ function drawSoldier(g,w,h,ang,team,pose){
 }
 
 function buildSprites(){
-  var SW=64, SH=96;
-  for(var t=0;t<2;t++){
-    SOLDIER[t]=[];
-    for(var a=0;a<8;a++){
-      SOLDIER[t][a]=[];
-      for(var p=0;p<3;p++){
-        (function(tt,aa,pp){
-          SOLDIER[tt][aa][pp]=TEX(SW,SH,function(g,w,h){
-            drawSoldier(g,w,h, aa/8*TAU, tt, pp);
-          });
-        })(t,a,p);
-      }
-    }
-    SOLDIER[t].dead=TEX(SW,SH,function(g,w,h){ drawSoldier(g,w,h,0,t,3); });
-  }
+  // Characters used to be 48 pre-rendered billboard frames (8 angles x 2 teams
+  // x 3 poses). They are real voxel geometry now -- see drawVoxelActor -- so
+  // that atlas is no longer baked.
   // ---- dropped weapon pickup ------------------------------------------
   SPR.pickup=TEX(72,40,function(g,w,h){
     g.save(); g.translate(w/2,h/2+6); g.rotate(-0.13);

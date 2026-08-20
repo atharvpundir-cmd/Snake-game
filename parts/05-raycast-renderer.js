@@ -280,23 +280,11 @@ function render3D(){
     }
   }
 
+  /* ---------------- VOXEL ACTORS (real 3D geometry) --------------------- */
+  drawVoxelActors();
+
   /* ---------------- SPRITES -------------------------------------------- */
   var list=[];
-  for(var bi=0;bi<BOTS.length;bi++){
-    var b=BOTS[bi];
-    if(b.alive){
-      var va=atan2(py-b.y, px-b.x);
-      var relA=b.ang-va;
-      var ai=Math.round(relA/TAU*8)%8; if(ai<0) ai+=8;
-      var pose = b.walkPhase||0;
-      list.push({t:SOLDIER[b.team][ai][pose], x:b.x, y:b.y, z:0,
-        w:0.80, h:1.16*(b.crouching?0.7:1), a:1, add:0});
-    } else if(b.deadT<4){
-      var sink=clamp(b.deadT*0.35,0,0.2);
-      list.push({t:SOLDIER[b.team].dead, x:b.x, y:b.y, z:0.02,
-        w:1.05, h:0.55, a:clamp(1-(b.deadT-2.6)/1.4,0,1), add:0});
-    }
-  }
   for(var pi=0;pi<PICKUPS.length;pi++){
     var pk=PICKUPS[pi];
     list.push({t:SPR.pickup, x:pk.x, y:pk.y, z:0.10+sin(G.t*2.4+pk.bob)*0.045,
